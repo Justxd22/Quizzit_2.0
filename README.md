@@ -71,6 +71,18 @@ Users upload study material → Pay $10 → AI generates quiz → Pass (≥80% i
 
 ---
 
+## Smart Contract and Session Managment Breakdown
+When user pays $10 through metamask tx hash is saved and used as Session ID
+1. ON pay tx hash + Wallet address is saved in backend and backend verifies it against blockchain => Backend creates a session JWT linked to the tx and address.
+    - on reload and wallet reconnected address is sent to backend then backend restores Last TX hash for this address then JWT is restored to be use as SessionID in case of tries left < 3
+2. Once you have SessionID and tries < 3 you are granted a quiz
+3. Quiz material + Questions + Answers are saved/indexed in DB under TX hash
+4. TX hash is marked as expired in DB after 3 tries then deleted
+5. Smart Contract Recieves payment from frontend and tx hash/address is saved
+6. Smart Contract is only controlled from backend for refund or Dontation to chairty
+
+---
+
 ## ⏳ Timeline
 | Week | Milestone                             |
 |------|----------------------------------------|
