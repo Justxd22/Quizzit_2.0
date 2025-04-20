@@ -1,195 +1,284 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { Shield, Award, Zap, Lock, BarChart2, Trophy } from "lucide-react"
-import Header from "@/components/ui/header"
-import { motion } from "framer-motion"
-import BlurText from "@/components/ui/BlurText"
-import Spline from "@splinetool/react-spline/next"
-import Link from "next/link"
-import Image from "next/image"
+import React, { useRef, useEffect } from "react";
+import { Shield, Award, Zap, Lock, BarChart2, Trophy } from "lucide-react";
+import Header from "@/components/ui/header";
+import Link from "next/link";
+import Image from "next/image";
+import { motion } from "framer-motion";
 
+// Animation variants (can be customized)
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.2, delayChildren: 0.3 },
+  },
+};
+
+// Define Footer component directly in this file
+const Footer = () => {
+  return (
+    <footer className="w-full border-t border-gray-700 bg-black py-6 md:py-10">
+      <div className="container mx-auto flex flex-col items-center justify-center gap-4 px-4 md:px-6 md:flex-row md:justify-between">
+        <div className="flex items-center gap-2 font-bold text-xl">
+          {/* Optional: Add your logo image here if you have one */}
+          {/* <Image src="/logo.svg" alt="Logo" width={45} height={40} className="h-8 w-8 text-primary" /> */}
+          <Zap size={24} className="text-purple-400" /> {/* Placeholder Icon */}
+          <span className="text-white">Quizzit</span>
+        </div>
+        <nav className="flex gap-4 sm:gap-6">
+          <Link href="#" className="text-xs text-gray-400 hover:text-white hover:underline underline-offset-4 transition-colors">
+            Terms of Service
+          </Link>
+          <Link href="#" className="text-xs text-gray-400 hover:text-white hover:underline underline-offset-4 transition-colors">
+            Privacy Policy
+          </Link>
+          <Link href="#" className="text-xs text-gray-400 hover:text-white hover:underline underline-offset-4 transition-colors">
+            Contact
+          </Link>
+        </nav>
+        <p className="text-xs text-gray-500">
+          &copy; {new Date().getFullYear()} Quizzit. All rights reserved.
+        </p>
+      </div>
+    </footer>
+  );
+};
+
+const HeroBackground = () => {
+  return (
+    <div className="absolute inset-0 -z-10 overflow-hidden">
+      {/* Base gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900"></div>
+      
+      {/* Static particles */}
+      <div className="absolute inset-0">
+        {/* Question marks */}
+        <div className="absolute text-5xl font-bold text-green-400 top-[20%] left-[15%] animate-float opacity-60" style={{textShadow: '0 0 10px rgba(74, 222, 128, 0.7)'}}>?</div>
+        <div className="absolute text-6xl font-bold text-blue-500 top-[35%] left-[75%] animate-float-delay opacity-70" style={{textShadow: '0 0 10px rgba(59, 130, 246, 0.7)'}}>?</div>
+        <div className="absolute text-4xl font-bold text-purple-600 top-[65%] left-[25%] animate-float-slow opacity-80" style={{textShadow: '0 0 10px rgba(147, 51, 234, 0.7)'}}>?</div>
+        <div className="absolute text-7xl font-bold text-indigo-400 top-[15%] left-[60%] animate-float-very-slow opacity-50" style={{textShadow: '0 0 10px rgba(129, 140, 248, 0.7)'}}>?</div>
+        <div className="absolute text-5xl font-bold text-green-400 top-[75%] left-[80%] animate-float-delay-slow opacity-60" style={{textShadow: '0 0 10px rgba(74, 222, 128, 0.7)'}}>?</div>
+        
+        {/* Quiz cards */}
+        <div className="absolute w-40 h-24 rounded-lg bg-gray-900/70 border-2 border-green-400 top-[30%] left-[30%] animate-float-slow shadow-lg shadow-green-400/30 rotate-3"></div>
+        <div className="absolute w-48 h-28 rounded-lg bg-gray-900/70 border-2 border-blue-500 top-[50%] left-[70%] animate-float shadow-lg shadow-blue-500/30 -rotate-6"></div>
+        <div className="absolute w-36 h-20 rounded-lg bg-gray-900/70 border-2 border-purple-600 top-[70%] left-[40%] animate-float-delay shadow-lg shadow-purple-600/30 rotate-12"></div>
+        <div className="absolute w-44 h-28 rounded-lg bg-gray-900/70 border-2 border-indigo-400 top-[20%] left-[50%] animate-float-very-slow shadow-lg shadow-indigo-400/30 -rotate-3"></div>
+        
+        {/* Glowing orbs */}
+        <div className="absolute w-6 h-6 rounded-full bg-green-400/30 top-[40%] left-[20%] animate-pulse shadow-lg shadow-green-400/50"></div>
+        <div className="absolute w-8 h-8 rounded-full bg-blue-500/30 top-[60%] left-[60%] animate-pulse-slow shadow-lg shadow-blue-500/50"></div>
+        <div className="absolute w-4 h-4 rounded-full bg-purple-600/30 top-[25%] left-[40%] animate-pulse-fast shadow-lg shadow-purple-600/50"></div>
+        <div className="absolute w-10 h-10 rounded-full bg-indigo-400/30 top-[80%] left-[30%] animate-pulse shadow-lg shadow-indigo-400/50"></div>
+        <div className="absolute w-5 h-5 rounded-full bg-green-400/30 top-[15%] left-[85%] animate-pulse-slow shadow-lg shadow-green-400/50"></div>
+      </div>
+      
+      {/* Overlay with animated gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 opacity-60"></div>
+    </div>
+  );
+};
 
 export default function LandingPage() {
-  const fadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-  }
-
-  const staggerChildren = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3,
-      },
-    },
-  }
-
-  const startText = useMemo(() => ["out smart AI", "or save PUPPIES"], [])
-
   return (
-    <div className="w-full overflow-x-hidden">
-      <div className="relative min-h-screen">
-        <div className="absolute inset-0 -z-10">
-          <Spline scene="/1.splinecode" />
-          <div className="absolute bottom-0 left-0 w-full h-40 z-10 bg-gradient-to-b from-transparent to-black/100 pointer-events-none" />
+    <div className="w-full overflow-x-hidden bg-black text-white"> {/* Ensure base background */}
+      {/* Hero */}
+      <section
+        id="hero"
+        className="relative min-h-screen bg-black flex items-center justify-center overflow-hidden"
+      >
+        {/* Hero Background */}
+        <HeroBackground />
+        {/* Gradient overlay for better text visibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/70 pointer-events-none"></div>
 
-        </div>
+        <Header /> {/* Header might need position adjustments (e.g., absolute or fixed) if overlapping */}
 
-        <Header />
-        <div className="flex min-h-screen flex-col justify-center items-center px-6 py-20 relative z-10 text-center">
+        {/* Centered Text Content */}
+        <div className="container mx-auto flex flex-col items-center justify-center px-6 py-20 relative z-10 text-center"> {/* Centering content */}
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={fadeIn}
-            className="w-full max-w-[800px] mx-auto flex flex-col gap-8"
+            variants={staggerContainer}
+            className="max-w-3xl space-y-6" // Removed flex-1, md:max-w-xl, text-left, md:pr-10. Added max-width for readability.
           >
-            <BlurText
-              key="start"
-              text={startText}
-              delay={150}
-              animateBy="words"
-              direction="top"
-              className="text-6xl font-bold"
-            />
-            <motion.p className="text-3xl font-bold gradient-text" variants={fadeIn} transition={{ delay: 3 }}>
-              AI-Powered. Blockchain-Secured.
+            <motion.h1
+              variants={fadeIn}
+              className="text-5xl md:text-7xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-blue-500 to-purple-600" // Possibly larger text
+            >
+              Stake Your ETH. Challenge Your Mind.
+            </motion.h1>
+            <motion.p variants={fadeIn} className="text-lg md:text-xl text-gray-300">
+              Upload your study material and let our AI quiz you. Pass to get your
+              ETH back or donate to a charity if you fail.
             </motion.p>
+            <motion.div variants={fadeIn}>
+              <Link
+                href="/start"
+                className="inline-block px-8 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 ease-in-out"
+              >
+                Get Started Now
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
-      </div>
+      </section>
 
+      {/* How It Works */}
+      <section id="how-it-works" className="bg-gray-950 py-20">
+         <div className="container mx-auto px-6 text-center">
+           <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.5 }}
+            variants={fadeIn}
+            className="text-3xl md:text-4xl font-bold text-white mb-4"
+           >
+             How It Works
+           </motion.h2>
+           <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.5 }}
+            variants={fadeIn}
+            className="text-gray-400 mb-12 max-w-2xl mx-auto"
+           >
+             A simple, transparent process that puts your knowledge—and your
+             stake—on the line.
+           </motion.p>
+           <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.5 }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-4 gap-8"
+           >
+            {[
+              { icon: Zap, title: "1. Deposit ETH", description: "Stake your ETH securely via our smart contract." },
+              { icon: Shield, title: "2. Upload Materials", description: "Provide your study materials—PDFs, slides, or docs." },
+              { icon: Award, title: "3. AI-Generated Quiz", description: "Let AI challenge you with custom quizzes." },
+              { icon: Trophy, title: "4. Win or Donate", description: "Pass to reclaim your ETH; fail and donate to charity." },
+            ].map((step, i) => (
+               <motion.div
+                key={i}
+                variants={fadeIn}
+                whileHover={{ y: -5, scale: 1.03 }}
+                className="space-y-4 p-6 bg-gray-800/50 border border-purple-600/30 rounded-lg transition-all duration-300 hover:bg-gray-800 hover:border-purple-500"
+               >
+                 <step.icon className="w-8 h-8 text-purple-400 mx-auto" />
+                 <h3 className="text-xl font-semibold text-white">{step.title}</h3>
+                 <p className="text-gray-400">{step.description}</p>
+               </motion.div>
+             ))}
+           </motion.div>
+         </div>
+       </section>
 
-      <div
-        className="w-full relative"
-        style={{
-          backgroundImage: "url('/bg3.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "top",
-        }}
-      >
-
-<section id="features" className="w-full py-4 md:py-6 lg:py-12 relative">
-  <div className="container px-4 md:px-6 relative z-10">
-    <motion.div
-      className="flex flex-col items-center justify-center space-y-4 text-center"
-      initial="hidden"
-      whileInView="visible"
-      variants={fadeIn}
-      viewport={{ once: true, margin: "-100px" }}
-    >
-      <div className="space-y-2">
-        <div className="inline-block rounded-lg bg-blue-500/20 px-3 py-1 text-sm text-blue-400">
-          Key Features
+      {/* Features Section (Example - using existing icons/structure) */}
+      <section id="features" className="py-20 bg-black">
+        <div className="container mx-auto px-6">
+          <motion.h2
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} variants={fadeIn}
+            className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
+           >
+             Why Choose Quizzit?
+           </motion.h2>
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-3 gap-10"
+           >
+            {[
+              {
+                icon: <Zap className="h-8 w-8 text-blue-400" />,
+                title: "AI-Powered Quizzes",
+                description:
+                  "Intelligent quizzes generated instantly from your learning materials.",
+              },
+              {
+                icon: <Shield className="h-8 w-8 text-green-400" />,
+                title: "Secure ETH Staking",
+                description:
+                  "Transparent and secure staking process managed by smart contracts.",
+              },
+              {
+                icon: <Award className="h-8 w-8 text-yellow-400" />,
+                title: "Learn & Earn (or Donate)",
+                description:
+                  "Motivate your studies with real stakes and support charities.",
+              },
+              {
+                icon: <Trophy className="h-8 w-8 text-red-400" />,
+                title: "Only 3 Attempts",
+                description:
+                  "Three chances per quiz, with hints between rounds to boost your score.",
+              },
+              {
+                icon: <Lock className="h-8 w-8 text-gray-400" />,
+                title: "Privacy First",
+                description:
+                  "We never store your files or answers—AI and smart contracts handle it live.",
+              },
+              {
+                icon: <BarChart2 className="h-8 w-8 text-purple-400" />,
+                title: "Feedback & Insights",
+                description:
+                  "Get detailed breakdowns of your answers so you can learn and improve.",
+              },
+            ].map((f, i) => (
+              <motion.div
+                key={i}
+                variants={fadeIn}
+                whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                className="flex flex-col items-start gap-3 p-6 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-blue-500 transition-colors"
+              >
+                <div className="rounded-lg bg-gray-800 p-3">{f.icon}</div>
+                <h3 className="text-xl font-bold text-white">{f.title}</h3>
+                <p className="text-gray-300">{f.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-        <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-white">
-          Study Hard. Pass Smart. Get Paid.
-        </h2>
-        <p className="max-w-[900px] text-gray-300 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          AI-generated quizzes from your course materials. Beat the test. Earn back your $10—or donate it to a cause if you don’t.
-        </p>
-      </div>
-    </motion.div>
+      </section>
 
-    <motion.div
-      className="mx-auto grid max-w-5xl items-center gap-6 py-12 md:grid-cols-2 lg:grid-cols-3 lg:gap-16"
-      variants={staggerChildren}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-50px" }}
-    >
-      {[
-        {
-          icon: <Zap className="h-6 w-6 text-blue-400" />,
-          title: "AI Quiz Generator",
-          description:
-            "Upload your PDFs, slides, or docs—our AI crafts smart, course-specific quizzes so you can prep efficiently.",
-        },
-        {
-          icon: <Shield className="h-6 w-6 text-blue-400" />,
-          title: "Blockchain Score Tracking",
-          description:
-            "Your scores are recorded immutably on-chain. Pass with 80% or more, and your funds return to your wallet.",
-        },
-        {
-          icon: <Award className="h-6 w-6 text-blue-400" />,
-          title: "Study like your life depends on it",
-          description:
-            "Pay $10 to enter. Pass the quiz, get it back. Fail all 3 tries? It goes to a vetted charity or shelter.",
-        },
-        {
-          icon: <Trophy className="h-6 w-6 text-blue-400" />,
-          title: "Only 3 Attempts",
-          description:
-            "Make it count! You get three chances to beat the quiz. Don’t worry—we give you hints between rounds.",
-        },
-        {
-          icon: <Lock className="h-6 w-6 text-blue-400" />,
-          title: "Privacy First",
-          description:
-            "We don’t store your files. Everything is processed securely using AI and smart contracts you can verify.",
-        },
-        {
-          icon: <BarChart2 className="h-6 w-6 text-blue-400" />,
-          title: "Learn With Feedback",
-          description:
-            "Get detailed breakdowns of your answers so you can actually learn what went wrong—then try again smarter.",
-        },
-      ].map((feature, index) => (
-        <motion.div
-          key={index}
-          className="flex flex-col items-start gap-2"
-          variants={fadeIn}
-          whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-        >
-          <div className="rounded-lg bg-blue-300/20 p-2">{feature.icon}</div>
-          <h3 className="text-xl font-bold text-white">{feature.title}</h3>
-          <p className="text-gray-300">{feature.description}</p>
-        </motion.div>
-      ))}
-    </motion.div>
-  </div>
-</section>
-<footer className="w-full border-t bg-background py-6 md:py-12">
-        <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6 md:flex-row md:justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Image
-              src="/logo.svg"
-              alt="Logo"
-              width={45}
-              height={40}
-              className="h-8 w-8 text-primary"
-            />
-            <span>Quizzit</span>
-          </div>
-          <nav className="flex gap-4 sm:gap-6">
-            <Link
-              href="#"
-              className="text-xs hover:underline underline-offset-4"
-            >
-              Terms of Service
-            </Link>
-            <Link
-              href="#"
-              className="text-xs hover:underline underline-offset-4"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              href="#"
-              className="text-xs hover:underline underline-offset-4"
-            >
-              Contact
-            </Link>
-          </nav>
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Quizzit. All rights reserved.
-          </p>
+
+      {/* FAQ - Example Structure */}
+      <section id="faq" className="bg-gray-950 py-20">
+        <div className="container mx-auto px-6 max-w-3xl">
+          <motion.h2
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} variants={fadeIn}
+            className="text-3xl md:text-4xl font-bold text-white text-center mb-10"
+          >
+            Frequently Asked Questions
+          </motion.h2>
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} variants={staggerContainer}
+            className="space-y-6"
+          >
+            {[
+              { q: "How does the ETH staking work?", a: "You deposit ETH into a secure smart contract. If you pass the quiz generated from your materials within 3 attempts, the ETH is returned to your wallet. If you fail, the ETH is automatically sent to a pre-determined charity address." },
+              { q: "What kind of materials can I upload?", a: "Currently, we support PDF files, text documents, and potentially slides (depending on format). We are working on expanding compatibility." },
+              { q: "Is my data secure?", a: "Yes, we prioritize privacy. Your uploaded materials are processed by the AI in real-time to generate quizzes and are not stored long-term. The staking is handled transparently on the blockchain via smart contracts." },
+              { q: "What happens if I fail the quiz?", a: "If you don't pass the quiz within three attempts, your staked ETH is automatically transferred to the designated charity partner via the smart contract." },
+              { q: "How is the passing score determined?", a: "The passing threshold (e.g., 70% or 80%) is set per quiz, often based on the complexity and length of the material. This will be clearly indicated before you start." },
+            ].map((item, i) => (
+              <motion.div key={i} variants={fadeIn} className="bg-gray-800/50 p-5 rounded-lg border border-gray-700">
+                <h3 className="font-semibold text-lg text-white mb-2">{item.q}</h3>
+                <p className="text-gray-400">{item.a}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
-      </footer>
-      </div>
+      </section>
+
+      {/* Footer */}
+      <Footer /> 
     </div>
-  )
+  );
 }
