@@ -13,19 +13,16 @@ import { Timer } from "@/components/ui/timer"
 import { AnimatedBorder } from "@/components/ui/animated-border"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, AlertTriangle } from "lucide-react"
-import { useAuth } from "@/hooks/use-auth"
 import type { QuizQuestion } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export default function QuizPage() {
   const router = useRouter()
-  const { isAuthenticated, token, quizAttempts, remainingAttempts, recordQuizAttempt, setAuthToken } = useAuth()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [attemptRecorded, setAttemptRecorded] = useState(false)
   const [tabSwitches, setTabSwitches] = useState(0)
   const [timeExpired, setTimeExpired] = useState(false)
   const [questionStartTime, setQuestionStartTime] = useState(Date.now())
@@ -35,68 +32,43 @@ export default function QuizPage() {
 
   // Check authentication and record attempt on initial load
   useEffect(() => {
-    const checkAuthAndRecordAttempt = async () => {
+    const fetchQuestions = async () => {
       try {
-        // If not authenticated, redirect to home
-        if (!isAuthenticated) {
-          console.log('nooooo authxxdd')
-          router.push("/login")
-          return
+        const response = await fetch("/api/questions")
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch questions")
         }
 
-        // If no attempts remaining, redirect to attempts-exceeded page
-        if (remainingAttempts <= 0) {
-          router.push("/attempts-exceeded")
-          return
-        }
+        const data = await response.json()
 
-        // Load questions
-        await loadQuestions()
-      } catch (err) {
-        console.error("Authentication error:", err)
-        setError("Authentication error. Please try again.")
+        if (!data.allowed) {
+          router.push('/attempts-exceeded')
+        }
+        if (data.allowed) {
+
+          document.cookie = `authToken=${data.token}; path=/; max-age=${1 * 24 * 60 * 60}; SameSite=Strict`;
+
+          setQuestions(data.questions)
+          const numberOfQuestions = data.questions.length
+          const totalTimeFromAPI = data.totalTime || 10 * 60 // fallback
+
+          setTotalTime(totalTimeFromAPI)
+          setTimePerQuestion(totalTimeFromAPI / numberOfQuestions)
+          setLoading(false)
+
+          // Initialize the question start time when questions are loaded
+          setQuestionStartTime(Date.now())
+        }
+      } catch (error) {
+        console.error("Failed to load questions:", error)
+        setError("Failed to load questions. Please try again.")
         setLoading(false)
       }
+
     }
-
-    checkAuthAndRecordAttempt()
-  }, [isAuthenticated, router, remainingAttempts, attemptRecorded])
-
-  // Load questions
-  const loadQuestions = async () => {
-    try {
-      if (!token) {
-        throw new Error("Authentication token not found")
-      }
-
-      const response = await fetch("/api/questions", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch questions")
-      }
-
-      const data = await response.json()
-      setAuthToken(data.token)
-      setQuestions(data.questions)
-      const numberOfQuestions = data.questions.length
-      const totalTimeFromAPI = data.totalTime || 10 * 60 // fallback
-
-      setTotalTime(totalTimeFromAPI)
-      setTimePerQuestion(totalTimeFromAPI / numberOfQuestions)
-      setLoading(false)
-
-      // Initialize the question start time when questions are loaded
-      setQuestionStartTime(Date.now())
-    } catch (error) {
-      console.error("Failed to load questions:", error)
-      setError("Failed to load questions. Please try again.")
-      setLoading(false)
-    }
-  }
+    fetchQuestions()
+  }, [])
 
   // Track time for current question - using setInterval for consistent updates
   useEffect(() => {
@@ -154,11 +126,6 @@ export default function QuizPage() {
 
   // Submit quiz
   const submitQuiz = useCallback(async () => {
-    if (!token) {
-      setError("Authentication token not found")
-      return
-    }
-
     try {
       // Create submission data with answers and anti-cheat info
       const submission = {
@@ -173,10 +140,6 @@ export default function QuizPage() {
       // Submit to API
       const response = await fetch("/api/submit", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(submission),
       })
 
@@ -190,15 +153,13 @@ export default function QuizPage() {
       sessionStorage.setItem("quizResult", JSON.stringify(result))
       sessionStorage.setItem("quizSubmission", JSON.stringify(submission))
       sessionStorage.setItem("quizQuestions", JSON.stringify(questions))
-      recordQuizAttempt()
-
       // Navigate to results page
-      router.push("/results")
+      router.push("/quiz/results")
     } catch (error) {
       console.error("Failed to submit quiz:", error)
       setError("Failed to submit quiz. Please try again.")
     }
-  }, [answers, questions, tabSwitches, timeExpired, router, token])
+  }, [answers, questions, tabSwitches, timeExpired, router])
 
   // Handle timer expiration - now uses the memoized submitQuiz
   const handleTimeExpired = useCallback(() => {

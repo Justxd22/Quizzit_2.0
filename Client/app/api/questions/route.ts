@@ -114,9 +114,14 @@ export async function GET(request: NextRequest) {
     const supabase = createClient()
 
     // Check if user exists
-    const { data: user, error } = await supabase.from("users").select("*").eq("wallet_address", walletAddress).single()
+    const { data: user, error } = await supabase.from("users").select("*").eq("wallet_address", walletAddress).eq("tx_hash", txHash).single()
     if (error || !user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 })
+    }
+
+    // Check if maximum attempts reached
+    if (user.quiz_attempts >= 3) {
+      return NextResponse.json({ message: "Maximum quiz attempts reached", allowed: false, attempts: 3 }, { status: 200 })
     }
 
     // Increment quiz attempts
@@ -139,7 +144,7 @@ export async function GET(request: NextRequest) {
       questions: shuffledQuestions,
       token: newToken,
       attempts: quizAttempts + 1,
-      remainingAttempts: 3 - (quizAttempts + 1),
+      allowed: true
     })
   } catch (error) {
     console.error("Error fetching questions:", error)

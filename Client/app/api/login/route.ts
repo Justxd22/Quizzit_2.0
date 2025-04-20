@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         const supabase = createClient()
 
         // Check if wallet address already exists
-        const { data: existingUser } = await supabase.from("users").select("*").eq("wallet_address", walletAddress).single()
+        const { data: existingUser } = await supabase.from("users").select("*").eq("wallet_address", walletAddress).eq("tx_hash", txHash).single()
 
         // If user exists, retrieve their transaction data
         if (existingUser) {
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
             wallet_address: walletAddress,
             tx_hash: txHash,
             quiz_attempts: 0,
+            allowed: true,
             best_score: 0,
             created_at: new Date().toISOString(),
         })

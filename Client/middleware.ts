@@ -1,11 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { jwtVerify } from "jose"
-
-// Secret key for JWT verification
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-at-least-32-characters-long")
-
-// Maximum number of quiz attempts allowed
-const MAX_QUIZ_ATTEMPTS = 3
 
 // Paths that require authentication
 const PROTECTED_PATHS = ["/quiz"]
@@ -21,27 +14,11 @@ export async function middleware(request: NextRequest) {
     // console.log('tokkkk', token);
 
     // If no token is present, redirect to login
-    if (!token) {
+    if (!token || token == "undefined") {
       return NextResponse.redirect(new URL("/login", request.url))
     }
-
-    try {
-      // Verify the token
-      const { payload } = await jwtVerify(token, JWT_SECRET)
-      const { quizAttempts } = payload as { quizAttempts: number }
-
-      // Check if maximum attempts reached
-      // check with db how much attempts are left using api?
-      if (quizAttempts >= MAX_QUIZ_ATTEMPTS) {
-        return NextResponse.redirect(new URL("/attempts-exceeded", request.url))
-      }
-
-      // Continue to the protected route
-      return NextResponse.next()
-    } catch (error) {
-      // If token is invalid, redirect to login
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+    // Continue to the protected route
+    return NextResponse.next()
   }
 
   // For non-protected routes, continue
