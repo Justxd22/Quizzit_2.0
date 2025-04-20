@@ -9,6 +9,7 @@ import json
 import os
 from dotenv import load_dotenv
 import random
+from io import BytesIO
 
 # Load environment variables
 load_dotenv()
@@ -18,7 +19,7 @@ app = FastAPI(title="PDF MCQ Generator API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),  # easier instead of redeploy
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,11 +38,14 @@ class QuestionsResponse(BaseModel):
 
 async def extract_text_from_pdf(pdf_file) -> str:
     """Extract text content from uploaded PDF file."""
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
+    try:
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        raise ValueError(f"Failed to extract text from PDF: {str(e)}")
 
 async def generate_mcq_questions(text: str, num_questions: int = 10) -> List[Dict]:
     """Generate MCQ questions using OpenAI."""
@@ -93,10 +97,12 @@ Remember to:
             
         return questions[:num_questions]
         
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid response format from OpenAI: {str(e)}")
     except Exception as e:
         print(f"Error generating questions: {e}")
         print("Response content:", response.choices[0].message.content if 'response' in locals() else "No response")
-        return []
+        raise ValueError(f"Failed to generate questions: {str(e)}")
 
 @app.post("/generate-questions/", response_model=QuestionsResponse)
 async def generate_questions_endpoint(file: UploadFile = File(...), num_questions: int = 10):
@@ -110,28 +116,29 @@ async def generate_questions_endpoint(file: UploadFile = File(...), num_question
     Returns:
         List of questions with options and correct answers
     """
-    if not file.filename.endswith('.pdf'):
+    # fix bug if name is in UPPER case
+    if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="File must be a PDF")
     
     try:
-        # Read the PDF content
+        # Read the PDF content directly into memory
         pdf_content = await file.read()
         
-        # Save to a temporary file because PyPDF2 needs a file object
-        temp_path = f"temp_{file.filename}"
-        with open(temp_path, "wb") as temp_file:
-            temp_file.write(pdf_content)
+        # Check file size before processing
+        if len(pdf_content) > 60 * 1024 * 1024:  # 60MB limit
+            raise HTTPException(status_code=400, detail="PDF file too large. Maximum size is 60MB.")
+            
+        pdf_file = BytesIO(pdf_content)
+        # Extract text from PDF
+        text = await extract_text_from_pdf(pdf_file)
         
-        # Process the PDF and generate questions
-        with open(temp_path, "rb") as pdf_file:
-            # Extract text from PDF
-            text = await extract_text_from_pdf(pdf_file)
-            
-            # Generate questions
-            questions = await generate_mcq_questions(text, num_questions)
-            
-        # Clean up the temporary file
-        os.remove(temp_path)
+        if not text.strip():
+            raise HTTPException(status_code=422, detail="Could not extract text from the PDF. The file may be empty, corrupted, or contain only images.")
+        # Generate questions
+        questions = await generate_mcq_questions(text, num_questions)
+        
+        if not questions:
+            raise HTTPException(status_code=500, detail="Failed to generate questions")
         
         return {"questions": questions}
     
