@@ -19,34 +19,21 @@ export default function ResultsPage() {
     const loadResults = async () => {
       try {
         // Get submission from session storage
-        const submissionData = sessionStorage.getItem("quizSubmission")
+        // const submissionData = sessionStorage.getItem("quizSubmission")
+        // const submission = JSON.parse(submissionData)
         const questionsData = sessionStorage.getItem("quizQuestions")
+        const questions = JSON.parse(questionsData)
+        const resD = sessionStorage.getItem("quizResult")
+        const res = JSON.parse(resD)
 
-        if (!submissionData || !questionsData) {
+        setResults(res)
+        setQuestions(questions)
+        if (!resD|| !questionsData) {
           router.push("/quiz")
           return
         }
-
-        const submission = JSON.parse(submissionData)
-        const questions = JSON.parse(questionsData)
-        setQuestions(questions)
-
-        // Submit answers to backend
-        const response = await fetch("/api/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(submission),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to submit answers")
-        }
-
-        const result = await response.json()
-        setResults(result)
         setLoading(false)
+
       } catch (error) {
         console.error("Failed to load results:", error)
         setLoading(false)
@@ -94,26 +81,26 @@ export default function ResultsPage() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
                 >
-                  <span className="text-sky-400">{results.score}</span>
+                  <span className="text-sky-400">{results.result.score}</span>
                   <span className="text-sky-200">/{questions.length}</span>
                 </motion.div>
                 <p className="text-lg text-sky-300">
-                  {results.score === questions.length
+                  {results.result.score === questions.length
                     ? "Perfect score! Excellent work!"
-                    : results.score >= questions.length * 0.7
+                    : results.result.score >= questions.length * 0.7
                       ? "Great job! Well done!"
-                      : results.score >= questions.length * 0.5
+                      : results.result.score >= questions.length * 0.5
                         ? "Good effort! Keep practicing!"
                         : "Keep studying and try again!"}
                 </p>
 
-                {results.metadata?.tabSwitches > 0 && (
+                {results.result.metadata?.tabSwitches > 0 && (
                   <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-500/30 rounded-lg text-yellow-200 text-sm">
-                    Note: Tab switching was detected {results.metadata.tabSwitches} times during your quiz.
+                    Note: Tab switching was detected {results.result.metadata.tabSwitches} times during your quiz.
                   </div>
                 )}
 
-                {results.metadata?.timeExpired && (
+                {results.result.metadata?.timeExpired && (
                   <div className="mt-4 p-3 bg-red-900/30 border border-red-500/30 rounded-lg text-red-200 text-sm">
                     Note: You ran out of time before completing the quiz.
                   </div>
@@ -127,7 +114,7 @@ export default function ResultsPage() {
           <h2 className="text-xl font-semibold text-sky-400 mb-4">Question Review</h2>
 
           {questions.map((question, index) => {
-            const userAnswer = results.answers[index]
+            const userAnswer = results.result.answers[index]
             const isCorrect = userAnswer?.correct
 
             return (

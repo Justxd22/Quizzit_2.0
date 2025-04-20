@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AuthProvider } from "@/hooks/use-auth";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -20,8 +21,8 @@ const DM_Sans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AthleteIQ",
-  description: "AthleteIQ is a decentralized application designed to help athletes track their performance, manage training data, and receive AI-powered insights while ensuring data privacy through zero-knowledge proofs (ZKPs).",
+  title: "Quizzit",
+  description: "Quizzit Ai quiz generator based off your own material, with little challenge to get you excited to pass the quizz!",
 };
 
 export default function RootLayout({
@@ -34,7 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable}  ${DM_Sans.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

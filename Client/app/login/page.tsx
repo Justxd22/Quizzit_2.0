@@ -2,36 +2,48 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import Link from "next/link"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { QrCode, ExternalLink, AlertTriangle, CheckCircle, Copy, ArrowLeft } from "lucide-react"
+import { ExternalLink, AlertTriangle, CheckCircle, Loader2 } from "lucide-react"
 import { ethers } from "ethers"
 import styles from "./login.module.css"
+import MetaMaskFox from "@/components/ui/fox"
+import { useAuth } from "@/hooks/use-auth"
 
 // Create motion components
-const MotionCard = motion(Card)
-const MotionButton = motion(Button)
+const MotionCard = motion.create(Card)
+const MotionButton = motion.create(Button)
 const MotionDiv = motion.div
 
+// Smart contract details
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
+const PAYMENT_AMOUNT = "0.0001" // Sepolia ETH
+const CONTRACT_ABI = [
+  "function deposit() external payable"
+]
+
 export default function SignupPage() {
+  const router = useRouter()
   const [walletConnected, setWalletConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState("")
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false)
   const [hasSufficientFunds, setHasSufficientFunds] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [copied, setCopied] = useState(false)
+  const [txStatus, setTxStatus] = useState("")
+  const [txHash, setTxHash] = useState("")
+  // Add a state to track if we're in client-side environment
+  const [isBrowser, setIsBrowser] = useState(false)
+  const { setAuthToken } = useAuth()
+  
 
   // Sepolia network parameters
   const SEPOLIA_CHAIN_ID = "0xaa36a7" // 11155111 in decimal
-  const SEPOLIA_RPC_URL = "https://sepolia.infura.io/v3/your-infura-id"
-  const SEPOLIA_FAUCET_URL = "https://sepoliafaucet.com/"
-
-  // Wallet address to receive payments
-  const PAYMENT_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+  const SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/oKxs-03sij-U_N0iOlrSsZFr29-IqbuF"
+  const SEPOLIA_FAUCET_URL = "https://cloud.google.com/application/web3/faucet/ethereum/sepolia"
 
   // Animation variants
   const containerVariants = {
@@ -66,31 +78,24 @@ export default function SignupPage() {
     },
   }
 
-  const pulseVariants = {
-    initial: { opacity: 0.7 },
-    animate: {
-      opacity: [0.7, 1, 0.7],
-      transition: {
-        duration: 2,
-        repeat: Number.POSITIVE_INFINITY,
-        repeatType: "reverse",
-      },
-    },
-  }
-
   const buttonVariants = {
     initial: { scale: 1 },
     hover: {
       scale: 1.03,
-      boxShadow: "0 0 15px rgba(236, 72, 153, 0.5)",
+      boxShadow: "0 0 15px rgba(1, 255, 255, 0.76)",
       transition: { type: "spring", stiffness: 400 },
     },
     tap: { scale: 0.97 },
   }
 
+  // Check if we're in browser environment and MetaMask is installed
+  useEffect(() => {
+    setIsBrowser(true)
+  }, [])
+
   // Check if MetaMask is installed
   const isMetaMaskInstalled = () => {
-    return typeof window !== "undefined" && window.ethereum !== undefined
+    return isBrowser && typeof window !== "undefined" && window.ethereum !== undefined
   }
 
   // Connect to MetaMask
@@ -196,13 +201,13 @@ export default function SignupPage() {
   // Check if wallet has sufficient funds
   const checkBalance = async (address) => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const provider = new ethers.BrowserProvider(window.ethereum)
       const balance = await provider.getBalance(address)
 
       // Consider 0.01 ETH as sufficient for this example
-      const sufficientBalance = ethers.utils.parseEther("0.01")
+      const sufficientBalance = ethers.parseEther(PAYMENT_AMOUNT)
 
-      if (balance.gte(sufficientBalance)) {
+      if (balance >= sufficientBalance) {
         setHasSufficientFunds(true)
       } else {
         setHasSufficientFunds(false)
@@ -213,15 +218,72 @@ export default function SignupPage() {
     }
   }
 
-  // Copy wallet address to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(PAYMENT_ADDRESS)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  // Complete signup by sending transaction and registering with backend
+  const completeSignup = async () => {
+    if (!walletConnected || !isCorrectNetwork || !hasSufficientFunds) {
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setTxStatus("Initiating transaction...")
+      setError("")
+
+      // Get provider and signer
+
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const signer = await provider.getSigner()
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      
+      // Send transaction
+      setTxStatus("Please confirm the transaction in MetaMask...")
+      const tx = await contract.deposit({ value: ethers.parseEther(PAYMENT_AMOUNT) });
+
+      setTxHash(tx.hash)
+      setTxStatus("Transaction sent! Waiting for confirmation...")
+
+      // Wait for transaction to be mined
+      await tx.wait()
+
+      setTxStatus("Transaction confirmed! Registering with server...")
+
+      // Send transaction data to backend
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          walletAddress: walletAddress,
+          txHash: tx.hash,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to register with server")
+      }
+
+      const data = await response.json()
+
+      setAuthToken(data.token)
+      setTxStatus("Registration complete! Redirecting to quiz...")
+
+      // Redirect to quiz page
+      setTimeout(() => {
+        router.push("/quiz")
+      }, 1500)
+    } catch (error) {
+      console.error("Error completing signup:", error)
+      setError(error.message || "Failed to complete signup. Please try again.")
+      setTxStatus("")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-    // Generate grid spans
-    const gridSpans = Array(225)
+  // Generate grid spans
+  const gridSpans = Array(225)
     .fill(0)
     .map((_, i) => (
       <motion.span
@@ -262,21 +324,18 @@ export default function SignupPage() {
         window.ethereum.removeAllListeners("chainChanged")
       }
     }
-  }, [walletAddress])
+  }, [walletAddress, isBrowser])
 
   return (
     <section className={styles.loginSection}>
-
       <div className={styles.gridContainer}>{gridSpans}</div>
 
-    <MotionDiv
+      <MotionDiv
         initial="hidden"
         animate="visible"
         variants={containerVariants}
         className="relative z-10 container mx-auto px-4 py-12"
-        style={{ paddingTop: "10rem" }}
       >
-
         <div className="max-w-5xl mx-auto">
           <MotionDiv variants={itemVariants} className="text-center mb-12">
             <MotionDiv
@@ -284,24 +343,17 @@ export default function SignupPage() {
               initial="initial"
               className="flex items-center justify-center gap-2 mb-4 text-3xl font-bold mb-2"
             >
-              <Image
-              src="/logo.svg"
-              alt="Logo"
-              width={100}
-              height={100}
-              className="text-primary"
-            />
-                Quizzit
+              <Image src="/logo.svg" alt="Logo" width={100} height={100} className="text-primary" />
+              Quizzit
             </MotionDiv>
             <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
             <p className="text-white/70">Choose your preferred payment method to join</p>
           </MotionDiv>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 relative">
+          <div className="flex justify-center md:grid gap-12 md:gap-16 relative">
             {/* MetaMask Option */}
             <MotionCard
               variants={itemVariants}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
               className="backdrop-blur-md bg-white/5 border border-white/10 overflow-visible"
             >
               <CardHeader>
@@ -313,7 +365,10 @@ export default function SignupPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!isMetaMaskInstalled() && (
+                <div className="flex justify-center items-center p-6 pt-0">
+                  <MetaMaskFox width={100} height={100} followMouse={true} />
+                </div>
+                {isBrowser && !isMetaMaskInstalled() && (
                   <MotionDiv
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -451,6 +506,35 @@ export default function SignupPage() {
                         </Alert>
                       </MotionDiv>
                     )}
+
+                    {txStatus && (
+                      <MotionDiv
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Alert className="bg-blue-900/20 border-blue-500/50">
+                          <div className="flex items-center">
+                            {isLoading && <Loader2 className="h-4 w-4 text-blue-500 mr-2 animate-spin" />}
+                            {!isLoading && <CheckCircle className="h-4 w-4 text-blue-500 mr-2" />}
+                            <AlertTitle>Transaction Status</AlertTitle>
+                          </div>
+                          <AlertDescription className="space-y-2">
+                            <p>{txStatus}</p>
+                            {txHash && (
+                              <a
+                                href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-blue-400 hover:text-blue-300 mt-2"
+                              >
+                                View on Etherscan <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                      </MotionDiv>
+                    )}
                   </MotionDiv>
                 )}
               </CardContent>
@@ -463,7 +547,7 @@ export default function SignupPage() {
                     whileTap="tap"
                     onClick={connectWallet}
                     disabled={isLoading || !isMetaMaskInstalled()}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-800 hover:from-blue-500 hover:to-purple-500 text-white border-0"
+                    className="w-full bg-gradient-to-r from-[#03e1f1] to-[#51787a] hover:bg-[#01ffffc2] text-white border-0"
                   >
                     {isLoading ? "Connecting..." : "Connect MetaMask"}
                   </MotionButton>
@@ -473,146 +557,25 @@ export default function SignupPage() {
                     initial="initial"
                     whileHover="hover"
                     whileTap="tap"
+                    onClick={completeSignup}
                     disabled={!isCorrectNetwork || !hasSufficientFunds || isLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-800 hover:from-blue-500 hover:to-purple-500 text-white border-0"
+                    className="w-full bg-gradient-to-r from-[#03e1f1] to-[#51787a] hover:bg-[#01ffffc2] text-white border-0"
                   >
-                    Complete Signup
+                    {isLoading ? (
+                      <span className="flex items-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </span>
+                    ) : (
+                      "Complete Signup"
+                    )}
                   </MotionButton>
                 )}
-              </CardFooter>
-            </MotionCard>
-
-            {/* Vertical Divider - Visible only on desktop */}
-            <MotionDiv
-              variants={pulseVariants}
-              initial="initial"
-              animate="animate"
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3"
-            >
-              <div className="w-px h-40 bg-gradient-to-b from-pink-500/0 via-pink-500/50 to-purple-500/0"></div>
-              <MotionDiv
-                whileHover={{ scale: 1.1 }}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 text-white/70"
-              >
-                OR
-              </MotionDiv>
-              <div className="w-px h-40 bg-gradient-to-b from-purple-500/0 via-purple-500/50 to-pink-500/0"></div>
-            </MotionDiv>
-
-            {/* Horizontal Divider - Visible only on mobile */}
-            <MotionDiv
-              variants={pulseVariants}
-              initial="initial"
-              animate="animate"
-              className="flex items-center gap-4 md:hidden"
-            >
-              <div className="flex-1 h-px bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0"></div>
-              <MotionDiv
-                whileHover={{ scale: 1.1 }}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 text-white/70 text-sm"
-              >
-                OR
-              </MotionDiv>
-              <div className="flex-1 h-px bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0"></div>
-            </MotionDiv>
-
-            {/* QR Code Option */}
-            <MotionCard
-              variants={itemVariants}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="backdrop-blur-md bg-white/5 border border-white/10"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-
-                  <CardTitle>Pay with Crypto</CardTitle>
-                </div>
-                <CardDescription className="text-white/70">
-                  Scan the QR code or send $10 worth of ETH to our wallet
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <MotionDiv
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="flex flex-col items-center"
-                >
-                  <MotionDiv
-                    whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(72, 236, 230, 0.3)" }}
-                    transition={{ type: "spring", stiffness: 300 }}
-                    className="relative backdrop-blur-sm bg-white/5 border border-white/10 rounded-lg p-1 shadow-lg mb-4"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg blur" />
-                    <div className="relative p-2 bg-white rounded-md">
-                      <Image
-                        src={``}
-                        // src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ethereum:${PAYMENT_ADDRESS}?value=0.01ETH`}
-                        alt="Payment QR Code"
-                        width={200}
-                        height={200}
-                        className="w-48 h-48"
-                      />
-                    </div>
-                  </MotionDiv>
-                  <MotionDiv
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.4 }}
-                  >
-                    <p className="text-center text-lg font-bold mb-1">Send $10 in ETH</p>
-                    <p className="text-center text-white/70 text-sm mb-4">
-                      After payment, your account will be activated
-                    </p>
-                  </MotionDiv>
-
-                  <MotionDiv
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.5 }}
-                    className="w-full p-3 rounded-lg bg-white/5 border border-white/10 flex items-center justify-between mb-2"
-                  >
-                    <div className="truncate text-sm text-white/90 mr-2">{PAYMENT_ADDRESS}</div>
-                    <MotionButton
-                      variants={buttonVariants}
-                      initial="initial"
-                      whileHover="hover"
-                      whileTap="tap"
-                      variant="ghost"
-                      size="sm"
-                      onClick={copyToClipboard}
-                      className="h-8 px-2 text-white/70 hover:text-pink-400 hover:bg-white/5"
-                    >
-                      {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </MotionButton>
-                  </MotionDiv>
-
-                  <MotionDiv
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
-                  >
-                    <p className="text-xs text-white/50 text-center">
-                      Please allow up to 5 minutes for the transaction to be confirmed
-                    </p>
-                  </MotionDiv>
-                </MotionDiv>
-              </CardContent>
-              <CardFooter>
-                <MotionButton
-                  variants={buttonVariants}
-                  initial="initial"
-                  whileHover="hover"
-                  whileTap="tap"
-                  className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white border-0"
-                >
-                  I've Sent the Payment
-                </MotionButton>
               </CardFooter>
             </MotionCard>
           </div>
         </div>
       </MotionDiv>
-      </section>
+    </section>
   )
 }

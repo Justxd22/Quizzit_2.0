@@ -13,9 +13,7 @@ import "hardhat-deploy-ethers";
 // Optional: if you're using a script to generate TypeScript ABIs
 // import generateTsAbis from "./scripts/generateTsAbis";
 
-const deployerPrivateKey =
-  process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ??
-  "0x";
+const deployerPrivateKey = process.env.DEPLOYER_PRIVATE_KEY;
 
 const providerApiKey = process.env.ALCHEMY_API_KEY || "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 const etherscanApiKey = process.env.ETHERSCAN_MAINNET_API_KEY || "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW";
@@ -42,18 +40,34 @@ const config: HardhatUserConfig = {
   },
   networks: {
     sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${providerApiKey}`,
+      // url: `https://eth-sepolia.g.alchemy.com/v2/oKxs-03sij-U_N0iOlrSsZFr29-IqbuF`,
+      url: 'https://eth-sepolia.public.blastapi.io',
       accounts: [deployerPrivateKey],
     },
   },
+  // etherscan: {
+  //   apiKey: `${etherscanApiKey}`,
+  // },
   etherscan: {
-    apiKey: `${etherscanApiKey}`,
-  },
-  verify: {
-    etherscan: {
-      apiKey: `${etherscanApiKey}`,
+    apiKey: {
+      'sepolia': 'empty'
     },
+    customChains: [
+      {
+        network: "sepolia",
+        chainId: 11155111,
+        urls: {
+          apiURL: "https://eth-sepolia.blockscout.com/api",
+          browserURL: "https://eth-sepolia.blockscout.com"
+        }
+      }
+    ]
   },
+  // verify: {
+  //   etherscan: {
+  //     apiKey: `${etherscanApiKey}`,
+  //   },
+  // },
   sourcify: {
     enabled: false,
   },

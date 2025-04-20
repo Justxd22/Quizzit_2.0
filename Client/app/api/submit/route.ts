@@ -1,8 +1,31 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { QuizResult } from "@/lib/types"
+import { jwtVerify } from "jose"
+import { createClient } from "@/lib/supabase"
+
+// Secret key for JWT verification
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-at-least-32-characters-long")
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.cookies.get("authToken")?.value
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+    }
+
+    console.log('tokkkkkkky', token)
+    // Verify token
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { walletAddress, txHash, quizAttempts } = payload as {
+      walletAddress: string
+      txHash: string
+      quizAttempts: number
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient()
+
+
     // Parse the request body
     const submission = await request.json()
     console.log(submission);
@@ -38,7 +61,21 @@ export async function POST(request: NextRequest) {
       metadata,
     }
 
-    return NextResponse.json(result)
+    // Save score
+    const { error } = await supabase
+      .from("users")
+      .update({ best_score: score })
+      .eq("wallet_address", walletAddress)
+
+    if (error) {
+      console.error("Database error:", error)
+      return NextResponse.json({ message: "Failed to update quiz attempts" }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      message: "Quiz attempt recorded",
+      result
+    })
   } catch (error) {
     console.error("Error processing submission:", error)
     return NextResponse.json({ error: "Failed to process submission" }, { status: 500 })
