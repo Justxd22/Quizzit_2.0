@@ -4,7 +4,7 @@ import { jwtVerify } from "jose"
 import { createClient } from "@/lib/supabase"
 
 // Secret key for JWT verification
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-at-least-32-characters-long")
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +24,21 @@ export async function POST(request: NextRequest) {
 
     // Initialize Supabase client
     const supabase = createClient()
+    // Check if user exists
+    const { data: user, error } = await supabase.from("users").select("*").eq("wallet_address", walletAddress).eq("tx_hash", txHash).single()
+    let allowed = true
+
+    if (error || !user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 })
+    }
+    // Check if maximum attempts reached
+    if (user.quiz_attempts > 3) {
+      return NextResponse.json({ message: "Maximum quiz attempts reached", max: true, attempts: 3 }, { status: 403 })
+    }
+
+    if (user.quiz_attempts == 3 && !user.allowed) {
+      allowed = false
+    }
 
 
     // Parse the request body
@@ -62,13 +77,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Save score
-    const { error } = await supabase
+    const { err } = await supabase
       .from("users")
-      .update({ best_score: score })
-      .eq("wallet_address", walletAddress)
+      .update({ best_score: score, allowed: allowed })
+      .eq("wallet_address", walletAddress).eq("tx_hash", txHash)
 
-    if (error) {
-      console.error("Database error:", error)
+    if (err) {
+      console.error("Database error:", err)
       return NextResponse.json({ message: "Failed to update quiz attempts" }, { status: 500 })
     }
 

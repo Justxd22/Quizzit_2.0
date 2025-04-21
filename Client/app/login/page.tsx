@@ -11,7 +11,6 @@ import { ExternalLink, AlertTriangle, CheckCircle, Loader2 } from "lucide-react"
 import { ethers } from "ethers"
 import styles from "./login.module.css"
 import MetaMaskFox from "@/components/ui/fox"
-import { useAuth } from "@/hooks/use-auth"
 
 // Create motion components
 const MotionCard = motion.create(Card)
@@ -37,7 +36,6 @@ export default function SignupPage() {
   const [txHash, setTxHash] = useState("")
   // Add a state to track if we're in client-side environment
   const [isBrowser, setIsBrowser] = useState(false)
-  const { setAuthToken } = useAuth()
   
 
   // Sepolia network parameters
@@ -265,14 +263,14 @@ export default function SignupPage() {
       }
 
       const data = await response.json()
+      document.cookie = `authToken=${data.token}; path=/; max-age=${1 * 24 * 60 * 60}; SameSite=Strict`;
 
-      setAuthToken(data.token)
       setTxStatus("Registration complete! Redirecting to quiz...")
 
       // Redirect to quiz page
       setTimeout(() => {
         router.push("/quiz")
-      }, 1500)
+      }, 1000)
     } catch (error) {
       console.error("Error completing signup:", error)
       setError(error.message || "Failed to complete signup. Please try again.")

@@ -171,10 +171,10 @@ export default function ResultsPage() {
 
         <div className="flex justify-center mt-8">
           <Button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/quiz")}
             className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
           >
-            Back to Home
+            Try Again?
           </Button>
         </div>
       </div>
