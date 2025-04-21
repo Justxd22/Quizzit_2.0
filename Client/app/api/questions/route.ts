@@ -83,8 +83,8 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export async function GET(request: NextRequest) {
-  const limit = 10
-  const timePerQuestion = 30 // seconds
+  const limit = 60
+  const timePerQuestion = 600 
   const totalTime = 1 * timePerQuestion // total in seconds
   const shuffledQuestions = shuffleArray(quizQuestions).slice(0, limit).map((q) => ({
     ...q,
@@ -125,13 +125,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Increment quiz attempts
-    const { err } = await supabase
+    const { error: updateError } = await supabase
       .from("users")
       .update({ quiz_attempts: quizAttempts + 1 })
       .eq("wallet_address", walletAddress)
 
-    if (err) {
-      console.error("Database error:", error)
+    if (updateError) {
+      console.error("Database error:", updateError)
       return NextResponse.json({ message: "Failed to update quiz attempts" }, { status: 500 })
     }
 

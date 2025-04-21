@@ -6,9 +6,10 @@ import { Clock } from "lucide-react"
 interface TimerProps {
   duration: number // in seconds
   onExpire: () => void
+  label?: string // Optional label to display with the timer
 }
 
-export function Timer({ duration, onExpire }: TimerProps) {
+export function Timer({ duration, onExpire, label }: TimerProps) {
   // Use a ref to track if the timer has been initialized
   const initialized = useRef(false)
   // Use a ref to store the remaining time to prevent resets
@@ -52,6 +53,7 @@ export function Timer({ duration, onExpire }: TimerProps) {
       } transition-colors duration-300`}
     >
       <Clock className={`h-4 w-4 ${isWarning ? "text-red-400" : "text-sky-400"}`} />
+      {label && <span className={`${isWarning ? "text-red-400" : "text-sky-400"} text-xs`}>{label}:</span>}
       <span className={`${isWarning ? "text-red-400 font-bold" : "text-sky-400"} tabular-nums`}>{formattedTime}</span>
     </div>
   )

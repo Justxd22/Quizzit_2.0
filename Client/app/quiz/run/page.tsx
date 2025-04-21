@@ -127,9 +127,16 @@ export default function QuizPage() {
   // Submit quiz
   const submitQuiz = useCallback(async () => {
     try {
+      // Process answers to handle time expired markers
+      const processedAnswers = Object.entries(answers).reduce((acc, [questionIndex, answer]) => {
+        // If the answer is the time expired marker, set it to an empty string to be counted as wrong
+        acc[questionIndex] = answer === "__TIME_EXPIRED__" ? "" : answer;
+        return acc;
+      }, {} as Record<string, string>);
+
       // Create submission data with answers and anti-cheat info
       const submission = {
-        answers,
+        answers: processedAnswers,
         metadata: {
           tabSwitches,
           timeExpired,
@@ -161,8 +168,8 @@ export default function QuizPage() {
     }
   }, [answers, questions, tabSwitches, timeExpired, router])
 
-  // Handle timer expiration - now uses the memoized submitQuiz
-  const handleTimeExpired = useCallback(() => {
+  // Handle quiz timer expiration
+  const handleQuizTimeExpired = useCallback(() => {
     setTimeExpired(true)
     // Submit whatever answers were completed when time expired
     submitQuiz()
@@ -250,7 +257,7 @@ export default function QuizPage() {
       <AnimatedBackground />
       <div className="absolute inset-0 bg-black/50" /> {/* Dim overlay */}
       <div className="fixed top-4 right-4 z-10">
-        {totalTime > 0 && <Timer duration={totalTime} onExpire={handleTimeExpired} />}
+        {totalTime > 0 && <Timer duration={totalTime} onExpire={handleQuizTimeExpired} label="Quiz Time" />}
       </div>
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-2xl mb-4">
@@ -293,6 +300,8 @@ export default function QuizPage() {
                           "border border-sky-500/30 bg-black/20 backdrop-blur-sm",
                           answers[currentQuestionIndex] === option
                             ? "bg-sky-900/40 border-sky-400/70"
+                            : answers[currentQuestionIndex] === "__TIME_EXPIRED__"
+                            ? "opacity-50 hover:bg-sky-900/20"
                             : "hover:bg-sky-900/20",
                         )}
                         onClick={() => handleOptionClick(option)}
@@ -322,7 +331,7 @@ export default function QuizPage() {
                     {currentQuestionIndex < questions.length - 1 ? (
                       <Button
                         onClick={handleNextQuestion}
-                        disabled={!answers[currentQuestionIndex]}
+                        disabled={!answers[currentQuestionIndex] && answers[currentQuestionIndex] !== "__TIME_EXPIRED__"}
                         className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
                       >
                         Next
@@ -330,7 +339,7 @@ export default function QuizPage() {
                     ) : (
                       <Button
                         onClick={handleSubmitQuiz}
-                        disabled={!answers[currentQuestionIndex]}
+                        disabled={!answers[currentQuestionIndex] && answers[currentQuestionIndex] !== "__TIME_EXPIRED__"}
                         className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
                       >
                         Submit Quiz
