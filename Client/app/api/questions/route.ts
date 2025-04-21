@@ -1,46 +1,14 @@
+// /api/questions
 import { NextResponse, NextRequest } from "next/server"
 import type { QuizQuestion } from "@/lib/types"
 import { jwtVerify } from "jose"
 import { createClient } from "@/lib/supabase"
 import { createJwtToken } from "@/lib/utils"
 
-// Define the backend API URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 
 
 // Secret key for JWT verification
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
-
-// Function to fetch quiz data directly from Supabase
-async function fetchQuizData(quizId: string, supabase: any) {
-  try {
-    console.log(`Fetching quiz data for ID: ${quizId}`)
-    
-    // Get the quiz directly from Supabase using the pattern from the frontend
-    const { data: existingQuiz, error } = await supabase
-      .from("quiz")
-      .select("*")
-      .eq("tx_hash", quizId)
-      .maybeSingle() // Use maybeSingle instead of single to avoid errors when no rows are found
-    
-    if (error) {
-      console.error('Error fetching quiz from Supabase:', error)
-      throw new Error(`Failed to fetch quiz data: ${error.message}`)
-    }
-    
-    if (!existingQuiz) {
-      console.error('No quiz found with ID:', quizId)
-      throw new Error('Quiz not found')
-    }
-    
-    // Parse the quiz content from the JSON string
-    const quizContent = JSON.parse(existingQuiz.quiz)
-    return quizContent.questions || []
-  } catch (error) {
-    console.error('Error fetching quiz data:', error)
-    throw error
-  }
-}
 
 // Utility function to shuffle an array
 function shuffleArray<T>(array: T[]): T[] {
@@ -53,8 +21,9 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export async function GET(request: NextRequest) {
-  const timePerQuestion = 60 // 60 seconds per question
-  let totalTime = 600 // default 10 minutes
+  const limit = 60
+  const timePerQuestion = 600 
+  let totalTime = 1 * timePerQuestion // total in seconds
 
   try {
     const token = request.cookies.get("authToken")?.value
@@ -89,11 +58,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "Maximum quiz attempts reached", allowed: false, attempts: 3 }, { status: 200 })
     }
 
+    const shuffledQuestions = shuffleArray(user.quiz).slice(0, limit).map((q) => ({
+      ...q,
+      options: shuffleArray(q.options),
+    }))
+  
+
     // Increment quiz attempts
     const { error: updateError } = await supabase
       .from("users")
       .update({ quiz_attempts: quizAttempts + 1 })
       .eq("wallet_address", walletAddress)
+      .eq("tx_hash", txHash).single()
 
     if (updateError) {
       console.error("Database error:", updateError)
@@ -105,7 +81,7 @@ export async function GET(request: NextRequest) {
     
     try {
       // Fetch quiz data directly from Supabase using txHash as quiz_id
-      const quizData = await fetchQuizData(txHash, supabase)
+      const quizData = shuffledQuestions
       
       if (!quizData || quizData.length === 0) {
         return NextResponse.json({ message: "No quiz questions found" }, { status: 404 })

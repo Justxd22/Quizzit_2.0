@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from "jose"
+import { createClient } from "@/lib/supabase"
 
+// Secret key for JWT verification
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 // Define the backend API URL
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export async function POST(request: NextRequest) {
   try {
+    const token = request.cookies.get("authToken")?.value
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+    }
+
+    // Verify token
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { walletAddress, txHash, quizAttempts } = payload as {
+      walletAddress: string
+      txHash: string
+      quizAttempts: number
+    }
+
+
     // Check if the request is multipart form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -48,11 +66,23 @@ export async function POST(request: NextRequest) {
 
     // Get the generated questions from the backend
     const data = await response.json();
+    // Initialize Supabase client
+    const supabase = createClient()
 
-    // Store the questions in the session or return them directly
-    // Here we're returning them directly, but you might want to store them
-    // in a database or session for the quiz page to retrieve
-    return NextResponse.json(data);
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ quiz: data.questions })
+      .eq("wallet_address", walletAddress)
+      .eq("tx_hash", txHash).single()
+
+
+    if (updateError) {
+      console.error("Database error:", updateError)
+      return NextResponse.json({ message: "Failed to save quiz" }, { status: 500 })
+    }
+
+
+    return NextResponse.json({message: "All good"});
   } catch (error) {
     console.error('Error processing upload:', error);
     return NextResponse.json(
