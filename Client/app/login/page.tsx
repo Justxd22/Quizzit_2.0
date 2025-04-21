@@ -265,11 +265,11 @@ export default function SignupPage() {
       const data = await response.json()
       document.cookie = `authToken=${data.token}; path=/; max-age=${1 * 24 * 60 * 60}; SameSite=Strict`;
 
-      setTxStatus("Registration complete! Redirecting to quiz...")
+      setTxStatus("Registration complete! Redirecting to upload page...")
 
-      // Redirect to quiz page
+      // Redirect to upload page
       setTimeout(() => {
-        router.push("/quiz")
+        router.push("/upload")
       }, 1000)
     } catch (error) {
       console.error("Error completing signup:", error)

@@ -134,6 +134,13 @@ export default function QuizPage() {
         return acc;
       }, {} as Record<string, string>);
 
+      // Prepare questions with consistent correctAnswer field for scoring
+      const preparedQuestions = questions.map(q => ({
+        ...q,
+        // Ensure correctAnswer is set, prioritizing correctAnswer if it exists, otherwise use correct_answer
+        correctAnswer: q.correctAnswer || q.correct_answer
+      }));
+
       // Create submission data with answers and anti-cheat info
       const submission = {
         answers: processedAnswers,
@@ -141,7 +148,7 @@ export default function QuizPage() {
           tabSwitches,
           timeExpired,
         },
-        questions, // Include questions for scoring
+        questions: preparedQuestions, // Include questions with normalized correctAnswer field for scoring
       }
 
       // Submit to API

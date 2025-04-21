@@ -4,73 +4,43 @@ import { jwtVerify } from "jose"
 import { createClient } from "@/lib/supabase"
 import { createJwtToken } from "@/lib/utils"
 
+// Define the backend API URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+
 
 // Secret key for JWT verification
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
 
-// Mock database of questions
-const quizQuestions: QuizQuestion[] = [
-  {
-    id: 1,
-    question: "What is the capital of France?",
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    correctAnswer: "Paris",
-  },
-  {
-    id: 2,
-    question: "Which planet is known as the Red Planet?",
-    options: ["Venus", "Mars", "Jupiter", "Saturn"],
-    correctAnswer: "Mars",
-  },
-  {
-    id: 3,
-    question: "What is the largest ocean on Earth?",
-    options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
-    correctAnswer: "Pacific Ocean",
-  },
-  {
-    id: 4,
-    question: "Who painted the Mona Lisa?",
-    options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Michelangelo"],
-    correctAnswer: "Leonardo da Vinci",
-  },
-  {
-    id: 5,
-    question: "What is the chemical symbol for gold?",
-    options: ["Go", "Gd", "Au", "Ag"],
-    correctAnswer: "Au",
-  },
-  {
-    id: 6,
-    question: "Which country is home to the kangaroo?",
-    options: ["New Zealand", "South Africa", "Australia", "Brazil"],
-    correctAnswer: "Australia",
-  },
-  {
-    id: 7,
-    question: "What is the tallest mountain in the world?",
-    options: ["K2", "Mount Everest", "Kangchenjunga", "Makalu"],
-    correctAnswer: "Mount Everest",
-  },
-  {
-    id: 8,
-    question: "Which element has the chemical symbol 'O'?",
-    options: ["Osmium", "Oxygen", "Oganesson", "Olivine"],
-    correctAnswer: "Oxygen",
-  },
-  {
-    id: 9,
-    question: "Who wrote 'Romeo and Juliet'?",
-    options: ["Charles Dickens", "Jane Austen", "William Shakespeare", "Mark Twain"],
-    correctAnswer: "William Shakespeare",
-  },
-  {
-    id: 10,
-    question: "What is the largest organ in the human body?",
-    options: ["Heart", "Liver", "Brain", "Skin"],
-    correctAnswer: "Skin",
-  },
-]
+// Function to fetch quiz data directly from Supabase
+async function fetchQuizData(quizId: string, supabase: any) {
+  try {
+    console.log(`Fetching quiz data for ID: ${quizId}`)
+    
+    // Get the quiz directly from Supabase using the pattern from the frontend
+    const { data: existingQuiz, error } = await supabase
+      .from("quiz")
+      .select("*")
+      .eq("tx_hash", quizId)
+      .maybeSingle() // Use maybeSingle instead of single to avoid errors when no rows are found
+    
+    if (error) {
+      console.error('Error fetching quiz from Supabase:', error)
+      throw new Error(`Failed to fetch quiz data: ${error.message}`)
+    }
+    
+    if (!existingQuiz) {
+      console.error('No quiz found with ID:', quizId)
+      throw new Error('Quiz not found')
+    }
+    
+    // Parse the quiz content from the JSON string
+    const quizContent = JSON.parse(existingQuiz.quiz)
+    return quizContent.questions || []
+  } catch (error) {
+    console.error('Error fetching quiz data:', error)
+    throw error
+  }
+}
 
 // Utility function to shuffle an array
 function shuffleArray<T>(array: T[]): T[] {
@@ -83,13 +53,8 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export async function GET(request: NextRequest) {
-  const limit = 60
-  const timePerQuestion = 600 
-  const totalTime = 1 * timePerQuestion // total in seconds
-  const shuffledQuestions = shuffleArray(quizQuestions).slice(0, limit).map((q) => ({
-    ...q,
-    options: shuffleArray(q.options),
-  }))
+  const timePerQuestion = 60 // 60 seconds per question
+  let totalTime = 600 // default 10 minutes
 
   try {
     const token = request.cookies.get("authToken")?.value
@@ -137,15 +102,37 @@ export async function GET(request: NextRequest) {
 
     // Create new token with updated attempts
     const newToken = await createJwtToken(walletAddress, txHash, quizAttempts + 1)
-
-
-    return NextResponse.json({
-      totalTime,
-      questions: shuffledQuestions,
-      token: newToken,
-      attempts: quizAttempts + 1,
-      allowed: true
-    })
+    
+    try {
+      // Fetch quiz data directly from Supabase using txHash as quiz_id
+      const quizData = await fetchQuizData(txHash, supabase)
+      
+      if (!quizData || quizData.length === 0) {
+        return NextResponse.json({ message: "No quiz questions found" }, { status: 404 })
+      }
+      
+      // Format questions to match frontend expected format
+      const formattedQuestions = quizData.map((q: any, index: number) => ({
+        id: index + 1,
+        question: q.question,
+        options: shuffleArray(q.options),
+        correctAnswer: q.correct_answer
+      }))
+      
+      // Calculate total time based on number of questions
+      totalTime = formattedQuestions.length * timePerQuestion
+      
+      return NextResponse.json({
+        totalTime,
+        questions: formattedQuestions,
+        token: newToken,
+        attempts: quizAttempts + 1,
+        allowed: true
+      })
+    } catch (error) {
+      console.error("Error fetching quiz data:", error)
+      return NextResponse.json({ message: "Failed to fetch quiz data" }, { status: 500 })
+    }
   } catch (error) {
     console.error("Error fetching questions:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
