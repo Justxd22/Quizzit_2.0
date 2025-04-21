@@ -1,0 +1,104 @@
+{
+    "questions": [
+        {
+            "question": "What is the condition for laminar flow over a flat plate?",
+            "options": [
+                "Re_x ≤ 5 × 10^5",
+                "Re_x > 10^7",
+                "Re_x = 100",
+                "Re_x < 1"
+            ],
+            "correct_answer": "Re_x ≤ 5 × 10^5"
+        },
+        {
+            "question": "For turbulent flow over a flat plate, what is the range of Reynolds number?",
+            "options": [
+                "5 × 10^5 ≤ Re_x ≤ 10^7",
+                "Re_x = 0",
+                "Re_x < 5 × 10^5",
+                "Re_x = 10^8"
+            ],
+            "correct_answer": "5 × 10^5 ≤ Re_x ≤ 10^7"
+        },
+        {
+            "question": "In laminar flow, what is the expression for Nusselt number (Nu_x)?",
+            "options": [
+                "Nu_x = 0.0296 Re_x^(4/5) Pr^(1/3)",
+                "Nu_x = 0.332 Re_x^(1/2) Pr^(1/3)",
+                "Nu_x = 0.453 Re_x^(0.5) Pr^(0.3)",
+                "Nu_x = 0.3 + 0.62 Re^(1/2) Pr^(1/3)"
+            ],
+            "correct_answer": "Nu_x = 0.332 Re_x^(1/2) Pr^(1/3)"
+        },
+        {
+            "question": "What does the Nusselt number (Nu) represent in heat transfer?",
+            "options": [
+                "The ratio of convective to conductive heat transfer",
+                "The velocity of the fluid",
+                "The density of the fluid",
+                "The temperature of the fluid"
+            ],
+            "correct_answer": "The ratio of convective to conductive heat transfer"
+        },
+        {
+            "question": "When considering mixed boundary conditions, what is the average drag coefficient (C_D,average)?",
+            "options": [
+                "C_D,average = 0.074",
+                "C_D,average = 0.5",
+                "C_D,average = 0.074 (Re_L^0.2 - 1742) / Re_L",
+                "C_D,average = 0.1"
+            ],
+            "correct_answer": "C_D,average = 0.074 (Re_L^0.2 - 1742) / Re_L"
+        },
+        {
+            "question": "For liquid metals with Prandtl number less than 0.05, what is the expression for Nusselt number (Nu_x)?",
+            "options": [
+                "Nu_x = 0.332 Re_x^(1/2) Pr^(1/3)",
+                "Nu_x = 0.453 Re_x^(0.5) Pr^(0.3)",
+                "Nu_x = 0.565 (Re_x Pr)^(0.5)",
+                "Nu_x = 2 + 0.4 Re^(12/3)"
+            ],
+            "correct_answer": "Nu_x = 0.565 (Re_x Pr)^(0.5)"
+        },
+        {
+            "question": "In fully developed turbulent flow, what is the equation for Nusselt number (Nu_D) when Ts < Tm?",
+            "options": [
+                "Nu_D = 0.045 Re_D^(0.5)",
+                "Nu_D = 0.5 Re_D^(0.2)",
+                "Nu_D = 0.1",
+                "Nu_D = 0.023 Re_D^(4/5) Pr^n with n = 0.3"
+            ],
+            "correct_answer": "Nu_D = 0.023 Re_D^(4/5) Pr^n with n = 0.3"
+        },
+        {
+            "question": "For flow in a circular tube, what is the expression for Nusselt number in developing laminar flow?",
+            "options": [
+                "Nu_D = 0.1",
+                "Nu_D = 0.3 + 0.62 Re^(1/2) Pr^(1/3)",
+                "Nu_D = 0.453 Re_x^(0.5) Pr^(0.3)",
+                "Nu_D = 3.66 + 0.0668 (D_L / Re_D Pr)"
+            ],
+            "correct_answer": "Nu_D = 3.66 + 0.0668 (D_L / Re_D Pr)"
+        },
+        {
+            "question": "What is the general expression for Nusselt number over a cylinder?",
+            "options": [
+                "Nu = 0.453 Re_x^(0.5) Pr^(0.3)",
+                "Nu = 0.3 + 0.62 Re^(1/2) Pr^(1/3)",
+                "Nu = 2 + 0.4 Re^(12/3)",
+                "Nu = 0.1"
+            ],
+            "correct_answer": "Nu = 0.3 + 0.62 Re^(1/2) Pr^(1/3)"
+        },
+        {
+            "question": "What is the range of Reynolds number for flow over spheres according to the text?",
+            "options": [
+                "Re > 10^6",
+                "Re < 100",
+                "3.5 < Re < 7.6 × 10^4",
+                "0 < Re < 2"
+            ],
+            "correct_answer": "3.5 < Re < 7.6 × 10^4"
+        }
+    ]
+}

@@ -6,6 +6,8 @@ import Header from "@/components/ui/header";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { HeroBackground } from "@/components/ui/hero";
+import { HeroBackgroundDiff } from "@/components/ui/hero_inverse";
 
 // Animation variants (can be customized)
 const fadeIn = {
@@ -48,41 +50,6 @@ const Footer = () => {
         </p>
       </div>
     </footer>
-  );
-};
-
-const HeroBackground = () => {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-      {/* Base gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900"></div>
-      
-      {/* Static particles */}
-      <div className="absolute inset-0">
-        {/* Question marks */}
-        <div className="absolute text-5xl font-bold text-green-400 top-[20%] left-[15%] animate-float opacity-60" style={{textShadow: '0 0 10px rgba(74, 222, 128, 0.7)'}}>?</div>
-        <div className="absolute text-6xl font-bold text-blue-500 top-[35%] left-[75%] animate-float-delay opacity-70" style={{textShadow: '0 0 10px rgba(59, 130, 246, 0.7)'}}>?</div>
-        <div className="absolute text-4xl font-bold text-purple-600 top-[65%] left-[25%] animate-float-slow opacity-80" style={{textShadow: '0 0 10px rgba(147, 51, 234, 0.7)'}}>?</div>
-        <div className="absolute text-7xl font-bold text-indigo-400 top-[15%] left-[60%] animate-float-very-slow opacity-50" style={{textShadow: '0 0 10px rgba(129, 140, 248, 0.7)'}}>?</div>
-        <div className="absolute text-5xl font-bold text-green-400 top-[75%] left-[80%] animate-float-delay-slow opacity-60" style={{textShadow: '0 0 10px rgba(74, 222, 128, 0.7)'}}>?</div>
-        
-        {/* Quiz cards */}
-        <div className="absolute w-40 h-24 rounded-lg bg-gray-900/70 border-2 border-green-400 top-[30%] left-[30%] animate-float-slow shadow-lg shadow-green-400/30 rotate-3"></div>
-        <div className="absolute w-48 h-28 rounded-lg bg-gray-900/70 border-2 border-blue-500 top-[50%] left-[70%] animate-float shadow-lg shadow-blue-500/30 -rotate-6"></div>
-        <div className="absolute w-36 h-20 rounded-lg bg-gray-900/70 border-2 border-purple-600 top-[70%] left-[40%] animate-float-delay shadow-lg shadow-purple-600/30 rotate-12"></div>
-        <div className="absolute w-44 h-28 rounded-lg bg-gray-900/70 border-2 border-indigo-400 top-[20%] left-[50%] animate-float-very-slow shadow-lg shadow-indigo-400/30 -rotate-3"></div>
-        
-        {/* Glowing orbs */}
-        <div className="absolute w-6 h-6 rounded-full bg-green-400/30 top-[40%] left-[20%] animate-pulse shadow-lg shadow-green-400/50"></div>
-        <div className="absolute w-8 h-8 rounded-full bg-blue-500/30 top-[60%] left-[60%] animate-pulse-slow shadow-lg shadow-blue-500/50"></div>
-        <div className="absolute w-4 h-4 rounded-full bg-purple-600/30 top-[25%] left-[40%] animate-pulse-fast shadow-lg shadow-purple-600/50"></div>
-        <div className="absolute w-10 h-10 rounded-full bg-indigo-400/30 top-[80%] left-[30%] animate-pulse shadow-lg shadow-indigo-400/50"></div>
-        <div className="absolute w-5 h-5 rounded-full bg-green-400/30 top-[15%] left-[85%] animate-pulse-slow shadow-lg shadow-green-400/50"></div>
-      </div>
-      
-      {/* Overlay with animated gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 opacity-60"></div>
-    </div>
   );
 };
 
@@ -182,70 +149,82 @@ export default function LandingPage() {
        </section>
 
       {/* Features Section (Example - using existing icons/structure) */}
-      <section id="features" className="py-20 bg-black">
-        <div className="container mx-auto px-6">
-          <motion.h2
-            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} variants={fadeIn}
-            className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
-           >
-             Why Choose Quizzit?
-           </motion.h2>
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-3 gap-10"
-           >
-            {[
-              {
-                icon: <Zap className="h-8 w-8 text-blue-400" />,
-                title: "AI-Powered Quizzes",
-                description:
-                  "Intelligent quizzes generated instantly from your learning materials.",
-              },
-              {
-                icon: <Shield className="h-8 w-8 text-green-400" />,
-                title: "Secure ETH Staking",
-                description:
-                  "Transparent and secure staking process managed by smart contracts.",
-              },
-              {
-                icon: <Award className="h-8 w-8 text-yellow-400" />,
-                title: "Learn & Earn (or Donate)",
-                description:
-                  "Motivate your studies with real stakes and support charities.",
-              },
-              {
-                icon: <Trophy className="h-8 w-8 text-red-400" />,
-                title: "Only 3 Attempts",
-                description:
-                  "Three chances per quiz, with hints between rounds to boost your score.",
-              },
-              {
-                icon: <Lock className="h-8 w-8 text-gray-400" />,
-                title: "Privacy First",
-                description:
-                  "We never store your files or answers—AI and smart contracts handle it live.",
-              },
-              {
-                icon: <BarChart2 className="h-8 w-8 text-purple-400" />,
-                title: "Feedback & Insights",
-                description:
-                  "Get detailed breakdowns of your answers so you can learn and improve.",
-              },
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                variants={fadeIn}
-                whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                className="flex flex-col items-start gap-3 p-6 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-blue-500 transition-colors"
-              >
-                <div className="rounded-lg bg-gray-800 p-3">{f.icon}</div>
-                <h3 className="text-xl font-bold text-white">{f.title}</h3>
-                <p className="text-gray-300">{f.description}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+{/* Features Section (Why Choose Quizzit) */}
+<section id="features" className="relative py-20 bg-black overflow-hidden">
+  {/* Hero-like Background */}
+  <HeroBackgroundDiff />
+  <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90 pointer-events-none" />
+
+  <div className="relative z-10 container mx-auto px-6">
+    <motion.h2
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.5 }}
+      variants={fadeIn}
+      className="text-3xl md:text-4xl font-bold text-white text-center mb-12"
+    >
+      Why Choose Quizzit?
+    </motion.h2>
+
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.5 }}
+      variants={staggerContainer}
+      className="grid grid-cols-1 md:grid-cols-3 gap-10"
+    >
+      {[
+        {
+          icon: <Zap className="h-8 w-8 text-blue-400" />,
+          title: "AI-Powered Quizzes",
+          description:
+            "Intelligent quizzes generated instantly from your learning materials.",
+        },
+        {
+          icon: <Shield className="h-8 w-8 text-green-400" />,
+          title: "Secure ETH Staking",
+          description:
+            "Transparent and secure staking process managed by smart contracts.",
+        },
+        {
+          icon: <Award className="h-8 w-8 text-yellow-400" />,
+          title: "Learn & Earn (or Donate)",
+          description:
+            "Motivate your studies with real stakes and support charities.",
+        },
+        {
+          icon: <Trophy className="h-8 w-8 text-red-400" />,
+          title: "Only 3 Attempts",
+          description:
+            "Three chances per quiz, with hints between rounds to boost your score.",
+        },
+        {
+          icon: <Lock className="h-8 w-8 text-gray-400" />,
+          title: "Privacy First",
+          description:
+            "We never store your files or answers—AI and smart contracts handle it live.",
+        },
+        {
+          icon: <BarChart2 className="h-8 w-8 text-purple-400" />,
+          title: "Feedback & Insights",
+          description:
+            "Get detailed breakdowns of your answers so you can learn and improve.",
+        },
+      ].map((f, i) => (
+        <motion.div
+          key={i}
+          variants={fadeIn}
+          whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+          className="flex flex-col items-start gap-3 p-6 rounded-lg bg-gray-900/60 border border-gray-700 hover:border-blue-500 transition-colors"
+        >
+          <div className="rounded-lg bg-gray-800 p-3">{f.icon}</div>
+          <h3 className="text-xl font-bold text-white">{f.title}</h3>
+          <p className="text-gray-300">{f.description}</p>
+        </motion.div>
+      ))}
+    </motion.div>
+  </div>
+</section>
 
 
       {/* FAQ - Example Structure */}

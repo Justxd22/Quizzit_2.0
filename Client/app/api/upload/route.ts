@@ -61,11 +61,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Optional: Define the config for the route
-export const config = {
-  api: {
-    // Disable body parsing, as we're handling multipart/form-data manually
-    bodyParser: false,
-  },
-};
