@@ -66,12 +66,19 @@ export async function POST(request: NextRequest) {
 
     // Get the generated questions from the backend
     const data = await response.json();
+    
+    // Add id to each question
+    const questionsWithIds = data.questions.map((question, index) => ({
+      id: index,
+      ...question
+    }));
+    
     // Initialize Supabase client
     const supabase = createClient()
 
     const { error: updateError } = await supabase
       .from("users")
-      .update({ quiz: data.questions })
+      .update({ quiz: questionsWithIds })
       .eq("wallet_address", walletAddress)
       .eq("tx_hash", txHash).single()
 

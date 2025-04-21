@@ -57,9 +57,10 @@ export async function GET(request: NextRequest) {
     if (user.quiz_attempts >= 3) {
       return NextResponse.json({ message: "Maximum quiz attempts reached", allowed: false, attempts: 3 }, { status: 200 })
     }
-
+    // Strip the correct answers from questions sent to frontend
     const shuffledQuestions = shuffleArray(user.quiz).slice(0, limit).map((q) => ({
-      ...q,
+      id: q.id,
+      question: q.question,
       options: shuffleArray(q.options),
     }))
   
@@ -87,20 +88,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ message: "No quiz questions found" }, { status: 404 })
       }
       
-      // Format questions to match frontend expected format
-      const formattedQuestions = quizData.map((q: any, index: number) => ({
-        id: index + 1,
-        question: q.question,
-        options: shuffleArray(q.options),
-        correctAnswer: q.correct_answer
-      }))
-      
       // Calculate total time based on number of questions
-      totalTime = formattedQuestions.length * timePerQuestion
+      totalTime = quizData.length * timePerQuestion
       
       return NextResponse.json({
         totalTime,
-        questions: formattedQuestions,
+        questions: quizData,
         token: newToken,
         attempts: quizAttempts + 1,
         allowed: true

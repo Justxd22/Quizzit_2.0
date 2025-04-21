@@ -47,25 +47,30 @@ export async function POST(request: NextRequest) {
 
     // Extract answers and metadata from submission
     const { answers, metadata, questions } = submission
-
+    
+    // Retrieve the questions with correct answers from the database
+    const originalQuestions = user.quiz
+    
     // Calculate score and prepare results
     let score = 0
     const resultAnswers: Record<number, { answer: string; correct: boolean; correctAnswer: string }> = {}
-
-    // Check each answer
+    
+    // Check each answer against the original questions with correct answers
     Object.entries(answers).forEach(([index, answer]) => {
       const questionIndex = Number.parseInt(index)
-      const question = questions[questionIndex]
-      const isCorrect = answer === question.correctAnswer
-
-      if (isCorrect) {
-        score++
-      }
-
-      resultAnswers[questionIndex] = {
-        answer: answer as string,
-        correct: isCorrect,
-        correctAnswer: question.correctAnswer,
+      // Find the original question by id to get the correct answer
+      const question = originalQuestions.find(q => q.id === questionIndex)
+      
+      if (question) {
+        const isCorrect = answer === question.correct_answer
+        if (isCorrect) {
+          score++
+        }
+        resultAnswers[questionIndex] = {
+          answer: answer as string,
+          correct: isCorrect,
+          correctAnswer: question.correct_answer,
+        }
       }
     })
 
