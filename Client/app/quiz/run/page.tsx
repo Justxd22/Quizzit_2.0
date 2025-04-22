@@ -124,56 +124,51 @@ export default function QuizPage() {
     }
   }, [])
 
-  // Submit quiz
-  const submitQuiz = useCallback(async () => {
-    try {
-      // Process answers to handle time expired markers
-      const processedAnswers = Object.entries(answers).reduce((acc, [questionIndex, answer]) => {
-        // If the answer is the time expired marker, set it to an empty string to be counted as wrong
-        acc[questionIndex] = answer === "__TIME_EXPIRED__" ? "" : answer;
-        return acc;
-      }, {} as Record<string, string>);
+// Submit quiz
+const submitQuiz = useCallback(async () => {
+  try {
+    // Process answers to handle time expired markers
+    const processedAnswers = Object.entries(answers).reduce((acc, [questionIndex, answer]) => {
+      // If the answer is the time expired marker, set it to an empty string to be counted as wrong
+      acc[questionIndex] = answer === "__TIME_EXPIRED__" ? "" : answer;
+      return acc;
+    }, {} as Record<string, string>);
 
-      // Prepare questions with consistent correctAnswer field for scoring
-      const preparedQuestions = questions.map(q => ({
-        ...q,
-        // Ensure correctAnswer is set, prioritizing correctAnswer if it exists, otherwise use correct_answer
-        correctAnswer: q.correctAnswer || q.correct_answer
-      }));
-
-      // Create submission data with answers and anti-cheat info
-      const submission = {
-        answers: processedAnswers,
-        metadata: {
-          tabSwitches,
-          timeExpired,
-        },
-        questions: preparedQuestions, // Include questions with normalized correctAnswer field for scoring
-      }
-
-      // Submit to API
-      const response = await fetch("/api/submit", {
-        method: "POST",
-        body: JSON.stringify(submission),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to submit quiz")
-      }
-
-      const result = await response.json()
-
-      // Store result in session storage for results page
-      sessionStorage.setItem("quizResult", JSON.stringify(result))
-      sessionStorage.setItem("quizSubmission", JSON.stringify(submission))
-      sessionStorage.setItem("quizQuestions", JSON.stringify(questions))
-      // Navigate to results page
-      router.push("/quiz/results")
-    } catch (error) {
-      console.error("Failed to submit quiz:", error)
-      setError("Failed to submit quiz. Please try again.")
+    // Create submission data with answers and anti-cheat info
+    const submission = {
+      answers: questions.map((q, index) => ({
+        id: q.id,
+        answer: processedAnswers[index] ?? "" // default to empty if not found
+      })),
+      metadata: {
+        tabSwitches,
+        timeExpired,
+      },
     }
-  }, [answers, questions, tabSwitches, timeExpired, router])
+
+    // Submit to API
+    const response = await fetch("/api/submit", {
+      method: "POST",
+      body: JSON.stringify(submission),
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to submit quiz")
+    }
+
+    const result = await response.json()
+
+    // Store result in session storage for results page
+    sessionStorage.setItem("quizResult", JSON.stringify(result))
+    sessionStorage.setItem("quizSubmission", JSON.stringify(submission))
+    sessionStorage.setItem("quizQuestions", JSON.stringify(questions))
+    // Navigate to results page
+    router.push("/quiz/results")
+  } catch (error) {
+    console.error("Failed to submit quiz:", error)
+    setError("Failed to submit quiz. Please try again.")
+  }
+}, [answers, questions, tabSwitches, timeExpired, router])
 
   // Handle quiz timer expiration
   const handleQuizTimeExpired = useCallback(() => {

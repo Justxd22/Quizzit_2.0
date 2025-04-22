@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
     // Check if maximum attempts reached
     if (user.quiz_attempts > 3) {
-      return NextResponse.json({ message: "Maximum quiz attempts reached", max: true, attempts: 3 }, { status: 403 })
+      return NextResponse.json({ message: "Maximum quiz attempts reached", max: true, attempts: 3 }, { status: 200 })
     }
 
     if (user.quiz_attempts == 3 && !user.allowed) {
@@ -46,33 +46,45 @@ export async function POST(request: NextRequest) {
     console.log(submission);
 
     // Extract answers and metadata from submission
-    const { answers, metadata, questions } = submission
+    const { answers, metadata } = submission
     
     // Retrieve the questions with correct answers from the database
-    const originalQuestions = user.quiz
+    const originalQuestions = user.quiz || []
+
+    // Create a mapping of question content to correct answers
+    // This allows us to match questions by their content rather than just ID
+    const questionMap = new Map()
+    originalQuestions.forEach(q => {
+      // Use the question text as a unique identifier
+      questionMap.set(q.id, {
+        correct_answer: q.correct_answer,
+      })
+    })
+    
+    // Debug logging
+    console.log("Original Questions:", originalQuestions.length)
+    console.log("Answer Keys:", Object.keys(answers))
     
     // Calculate score and prepare results
     let score = 0
     const resultAnswers: Record<number, { answer: string; correct: boolean; correctAnswer: string }> = {}
     
-    // Check each answer against the original questions with correct answers
-    Object.entries(answers).forEach(([index, answer]) => {
-      const questionIndex = Number.parseInt(index)
-      // Find the original question by id to get the correct answer
-      const question = originalQuestions.find(q => q.id === questionIndex)
-      
-      if (question) {
-        const isCorrect = answer === question.correct_answer
-        if (isCorrect) {
-          score++
-        }
-        resultAnswers[questionIndex] = {
-          answer: answer as string,
-          correct: isCorrect,
-          correctAnswer: question.correct_answer,
-        }
+    // Check each answer
+    answers.forEach(({ id, answer }, index) => {
+      const question = questionMap.get(id);
+      const isCorrect = answer === question?.correct_answer;
+    
+      if (isCorrect) {
+        score++;
       }
-    })
+    
+      resultAnswers[index] = {
+        answer: answer,
+        correct: isCorrect,
+        correctAnswer: question?.correct_answer,
+      };
+    });
+    
 
     // Return the results
     const result: QuizResult = {
