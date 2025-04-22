@@ -1,26 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AnimatedBackground } from "@/components/ui/animated-background"
 import type { QuizQuestion, QuizResult } from "@/lib/types"
-import { CheckCircle, XCircle } from "lucide-react"
+import { CheckCircle, XCircle, ExternalLink } from "lucide-react"
+import confetti from 'canvas-confetti'
 
 export default function ResultsPage() {
   const router = useRouter()
   const [results, setResults] = useState<QuizResult | null>(null)
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [loading, setLoading] = useState(true)
+  const [txHash, setTxHash] = useState<string | null>(null)
+  const confettiTriggered = useRef(false)
 
   useEffect(() => {
     const loadResults = async () => {
       try {
         // Get submission from session storage
-        // const submissionData = sessionStorage.getItem("quizSubmission")
-        // const submission = JSON.parse(submissionData)
         const questionsData = sessionStorage.getItem("quizQuestions")
         const questions = JSON.parse(questionsData)
         const resD = sessionStorage.getItem("quizResult")
@@ -28,7 +29,13 @@ export default function ResultsPage() {
 
         setResults(res)
         setQuestions(questions)
-        if (!resD|| !questionsData) {
+        
+        // Check for transaction hash
+        if (res && res.tx) {
+          setTxHash(res.tx)
+        }
+        
+        if (!resD || !questionsData) {
           router.push("/quiz")
           return
         }
@@ -42,6 +49,43 @@ export default function ResultsPage() {
 
     loadResults()
   }, [router])
+
+  // Trigger confetti when transaction is found and perfect score
+  useEffect(() => {
+    if (txHash && results?.result.score === questions.length && !confettiTriggered.current) {
+      confettiTriggered.current = true
+      
+      // Trigger confetti effect
+      const duration = 3 * 1000
+      const animationEnd = Date.now() + duration
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }
+
+      function randomInRange(min: number, max: number) {
+        return Math.random() * (max - min) + min
+      }
+
+      const interval: any = setInterval(() => {
+        const timeLeft = animationEnd - Date.now()
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval)
+        }
+
+        const particleCount = 50 * (timeLeft / duration)
+        
+        // Since particles fall down, start a bit higher than random
+        confetti(Object.assign({}, defaults, { 
+          particleCount, 
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
+        }))
+        
+        confetti(Object.assign({}, defaults, { 
+          particleCount, 
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
+        }))
+      }, 250)
+    }
+  }, [txHash, results, questions.length])
 
   if (loading) {
     return (
@@ -61,6 +105,13 @@ export default function ResultsPage() {
         <div className="relative z-10 text-red-400 text-xl">Error loading results</div>
       </div>
     )
+  }
+
+  // Determine Etherscan URL based on network
+  const getEtherscanUrl = (hash: string) => {
+    // You may want to make this dynamic based on your network
+    const baseUrl = "https://sepolia.etherscan.io/tx/"
+    return `${baseUrl}${hash}`
   }
 
   return (
@@ -104,6 +155,35 @@ export default function ResultsPage() {
                   <div className="mt-4 p-3 bg-red-900/30 border border-red-500/30 rounded-lg text-red-200 text-sm">
                     Note: You ran out of time before completing the quiz.
                   </div>
+                )}
+                
+                {/* Transaction Success Box */}
+                {txHash && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                    className="w-full mt-6 p-4 bg-green-900/30 border border-green-500/50 rounded-lg"
+                  >
+                    <h3 className="text-lg font-semibold text-green-400 mb-2">
+                      🎉 Congratulations! Your reward has been processed!
+                    </h3>
+                    <p className="text-green-300 mb-3">
+                      Your deposit has been successfully refunded to your wallet.
+                    </p>
+                    <div className="flex items-center text-sm">
+                      <span className="text-green-200 mr-2">Transaction:</span>
+                      <a 
+                        href={getEtherscanUrl(txHash)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sky-400 hover:text-sky-300 flex items-center"
+                      >
+                        {txHash.substring(0, 10)}...{txHash.substring(txHash.length - 8)}
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </div>
+                  </motion.div>
                 )}
               </div>
             </CardContent>
@@ -170,12 +250,24 @@ export default function ResultsPage() {
         </div>
 
         <div className="flex justify-center mt-8">
+        {!txHash && (
+
           <Button
             onClick={() => router.push("/quiz")}
             className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
           >
             Try Again?
           </Button>
+        )}
+                {txHash && (
+
+<Button
+  onClick={() => router.push("/")}
+  className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
+>
+  Home
+</Button>
+)}
         </div>
       </div>
     </div>

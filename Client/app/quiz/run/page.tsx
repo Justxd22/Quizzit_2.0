@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
@@ -22,6 +22,7 @@ export default function QuizPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tabSwitches, setTabSwitches] = useState(0)
   const [timeExpired, setTimeExpired] = useState(false)
@@ -29,6 +30,8 @@ export default function QuizPage() {
   const [questionElapsedTime, setQuestionElapsedTime] = useState(0)
   const [totalTime, setTotalTime] = useState<number>(0)
   const [timePerQuestion, setTimePerQuestion] = useState<number>(0)
+  const [timerActive, setTimerActive] = useState(true)
+  const timerRef = useRef<any>(null)
 
   // Check authentication and record attempt on initial load
   useEffect(() => {
@@ -73,13 +76,15 @@ export default function QuizPage() {
   // Track time for current question - using setInterval for consistent updates
   useEffect(() => {
     const timer = setInterval(() => {
-      const now = Date.now()
-      const elapsed = Math.floor((now - questionStartTime) / 1000)
-      setQuestionElapsedTime(elapsed)
+      if (timerActive) {
+        const now = Date.now()
+        const elapsed = Math.floor((now - questionStartTime) / 1000)
+        setQuestionElapsedTime(elapsed)
+      }
     }, 500) // Update twice per second for smoother progress
 
     return () => clearInterval(timer)
-  }, [questionStartTime])
+  }, [questionStartTime, timerActive])
 
   // Reset question timer when moving to a new question
   useEffect(() => {
@@ -127,6 +132,10 @@ export default function QuizPage() {
 // Submit quiz
 const submitQuiz = useCallback(async () => {
   try {
+    // Stop the timer
+    setTimerActive(false)
+    setSubmitting(true)
+    
     // Process answers to handle time expired markers
     const processedAnswers = Object.entries(answers).reduce((acc, [questionIndex, answer]) => {
       // If the answer is the time expired marker, set it to an empty string to be counted as wrong
@@ -167,6 +176,8 @@ const submitQuiz = useCallback(async () => {
   } catch (error) {
     console.error("Failed to submit quiz:", error)
     setError("Failed to submit quiz. Please try again.")
+    setSubmitting(false)
+    setTimerActive(true) // Restart timer if submission fails
   }
 }, [answers, questions, tabSwitches, timeExpired, router])
 
@@ -222,6 +233,20 @@ const submitQuiz = useCallback(async () => {
     )
   }
 
+  if (submitting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <AnimatedBackground />
+        <div className="absolute inset-0 bg-black/50" /> {/* Dim overlay */}
+        <div className="relative z-10 text-sky-400 text-xl flex flex-col items-center">
+          <Loader2 className="mb-4 h-12 w-12 animate-spin" />
+          <p>Submitting your answers...</p>
+          <p className="text-sm text-sky-300 mt-2">Please wait while we process your submission</p>
+        </div>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -259,7 +284,14 @@ const submitQuiz = useCallback(async () => {
       <AnimatedBackground />
       <div className="absolute inset-0 bg-black/50" /> {/* Dim overlay */}
       <div className="fixed top-4 right-4 z-10">
-        {totalTime > 0 && <Timer duration={totalTime} onExpire={handleQuizTimeExpired} label="Quiz Time" />}
+        {totalTime > 0 && timerActive && (
+          <Timer 
+            duration={totalTime} 
+            onExpire={handleQuizTimeExpired} 
+            label="Quiz Time"
+            ref={timerRef} 
+          />
+        )}
       </div>
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-2xl mb-4">
