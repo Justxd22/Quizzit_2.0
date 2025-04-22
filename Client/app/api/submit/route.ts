@@ -2,9 +2,18 @@ import { type NextRequest, NextResponse } from "next/server"
 import type { QuizResult } from "@/lib/types"
 import { jwtVerify } from "jose"
 import { createClient } from "@/lib/supabase"
+import { ethers } from 'ethers';
 
+// Import your ABI or define it here
+const EscrowRefundABI = [
+  "function refund(address payable recipient, uint256 amount) external"
+];
 // Secret key for JWT verification
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as string;
+const TRUSTED_BACKEND_PRIVATE_KEY = process.env.TRUSTED_BACKEND_PRIVATE_KEY as string;
+const RPC_URL = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL as string;
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,8 +93,49 @@ export async function POST(request: NextRequest) {
         correctAnswer: question?.correct_answer,
       };
     });
-    
 
+    let refundReceipt = null
+    // refund
+    if (score == 10) {
+      try {
+
+        // Set up provider
+        const provider = new ethers.JsonRpcProvider(RPC_URL);
+        const wallet = new ethers.Wallet(TRUSTED_BACKEND_PRIVATE_KEY, provider);
+
+        // First, get the transaction receipt to verify it exists
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (!receipt) {
+          return NextResponse.json({ message: 'Transaction not found' }, { status: 404 })
+        }
+
+        // Get the transaction details
+        const transaction = await provider.getTransaction(txHash);
+        if (!transaction) {
+          return NextResponse.json({ message: 'Transaction details not found' }, { status: 404 })
+        }
+
+        // Check if the transaction is a deposit to our contract
+        if (transaction.to?.toLowerCase() !== CONTRACT_ADDRESS.toLowerCase()) {
+          return NextResponse.json({ message: 'Transaction was not sent to the escrow contract' }, { status: 404 })
+        }
+
+
+        // Create contract instance
+        const contractRead = new ethers.Contract(CONTRACT_ADDRESS, EscrowRefundABI, provider);
+        const contractWrite = contractRead.connect(wallet);
+        // Now issue the refund
+        const tx = await contractWrite.refund(walletAddress, ethers.parseEther("0.0001"))
+
+        // Wait for the refund transaction to be mined
+        refundReceipt = await tx.wait();
+
+      } catch (refundError) {
+        console.error("Error processing refund:", refundError);
+        // Continue with the response, just log the refund error
+      }
+
+    }
     // Return the results
     const result: QuizResult = {
       score,
@@ -106,7 +156,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: "Quiz attempt recorded",
-      result
+      result,
+      tx: refundReceipt?.hash || null
     })
   } catch (error) {
     console.error("Error processing submission:", error)
