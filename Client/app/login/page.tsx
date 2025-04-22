@@ -268,9 +268,7 @@ export default function SignupPage() {
       setTxStatus("Registration complete! Redirecting to upload page...")
 
       // Redirect to upload page
-      setTimeout(() => {
-        router.push("/upload")
-      }, 1000)
+      router.push("/upload")
     } catch (error) {
       console.error("Error completing signup:", error)
       setError(error.message || "Failed to complete signup. Please try again.")

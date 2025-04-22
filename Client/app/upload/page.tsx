@@ -138,9 +138,7 @@ export default function UploadPage() {
         throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
       }
 
-      setTimeout(() => {
-        router.push("/quiz");
-      }, 2000);
+      router.push("/quiz");
     } catch (error) {
       console.error("Upload error:", error);
       setErrorMessage(error instanceof Error ? error.message : "An unknown error occurred");
