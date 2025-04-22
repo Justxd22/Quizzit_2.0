@@ -88,7 +88,7 @@ export default function LandingPage() {
             </motion.p>
             <motion.div variants={fadeIn}>
               <Link
-                href="/start"
+                href="/login"
                 className="inline-block px-8 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 ease-in-out"
               >
                 Get Started Now

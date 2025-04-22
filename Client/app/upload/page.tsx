@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Upload, FileText, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import Header from "@/components/ui/header";
+import { HeroBackground } from "@/components/ui/hero";
 
 // Animation variants
 const containerVariants = {
@@ -43,36 +44,6 @@ const buttonVariants = {
 // Create motion components
 const MotionCard = motion(Card);
 const MotionButton = motion(Button);
-
-const HeroBackground = () => {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-      {/* Base gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900"></div>
-      
-      {/* Static particles */}
-      <div className="absolute inset-0">
-        {/* Question marks */}
-        <div className="absolute text-5xl font-bold text-green-400 top-[20%] left-[15%] animate-float opacity-60" style={{textShadow: '0 0 10px rgba(74, 222, 128, 0.7)'}}>?</div>
-        <div className="absolute text-6xl font-bold text-blue-500 top-[35%] left-[75%] animate-float-delay opacity-70" style={{textShadow: '0 0 10px rgba(59, 130, 246, 0.7)'}}>?</div>
-        <div className="absolute text-4xl font-bold text-purple-600 top-[65%] left-[25%] animate-float-slow opacity-80" style={{textShadow: '0 0 10px rgba(147, 51, 234, 0.7)'}}>?</div>
-        
-        {/* Quiz cards */}
-        <div className="absolute w-40 h-24 rounded-lg bg-gray-900/70 border-2 border-green-400 top-[30%] left-[30%] animate-float-slow shadow-lg shadow-green-400/30 rotate-3"></div>
-        <div className="absolute w-48 h-28 rounded-lg bg-gray-900/70 border-2 border-blue-500 top-[50%] left-[70%] animate-float shadow-lg shadow-blue-500/30 -rotate-6"></div>
-        <div className="absolute w-36 h-20 rounded-lg bg-gray-900/70 border-2 border-purple-600 top-[70%] left-[40%] animate-float-delay shadow-lg shadow-purple-600/30 rotate-12"></div>
-        
-        {/* Glowing orbs */}
-        <div className="absolute w-6 h-6 rounded-full bg-green-400/30 top-[40%] left-[20%] animate-pulse shadow-lg shadow-green-400/50"></div>
-        <div className="absolute w-8 h-8 rounded-full bg-blue-500/30 top-[60%] left-[60%] animate-pulse-slow shadow-lg shadow-blue-500/50"></div>
-        <div className="absolute w-4 h-4 rounded-full bg-purple-600/30 top-[25%] left-[40%] animate-pulse-fast shadow-lg shadow-purple-600/50"></div>
-      </div>
-      
-      {/* Overlay with animated gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 opacity-60"></div>
-    </div>
-  );
-};
 
 export default function UploadPage() {
   const router = useRouter();
@@ -166,23 +137,10 @@ export default function UploadPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
       }
-      
-      // Get the generated questions from the response
-      const data = await response.json();
-      
-      // Store the questions in localStorage for the quiz page to access
-      if (data.questions) {
-        localStorage.setItem("quizQuestions", JSON.stringify(data.questions));
-        setUploadStatus("success");
-        
-        // Redirect to quiz page after successful upload
-        setTimeout(() => {
-          router.push("/quiz");
-        }, 2000);
-      } else {
-        throw new Error("No questions were generated from the PDF");
-      }
-      
+
+      setTimeout(() => {
+        router.push("/quiz");
+      }, 2000);
     } catch (error) {
       console.error("Upload error:", error);
       setErrorMessage(error instanceof Error ? error.message : "An unknown error occurred");
@@ -225,7 +183,7 @@ export default function UploadPage() {
           
           <MotionCard
             variants={itemVariants}
-            className="w-full bg-gray-900/80 border border-purple-600/30 backdrop-blur-sm"
+            className="w-full bg-gray-900/90 border border-purple-600/30 backdrop-blur-sm"
           >
             <CardHeader>
               <CardTitle className="text-2xl text-center text-white">PDF Upload</CardTitle>
@@ -237,9 +195,8 @@ export default function UploadPage() {
             <CardContent>
               {/* File upload area */}
               <div
-                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors duration-300 ${
-                  file ? "border-green-500 bg-green-500/10" : "border-gray-600 hover:border-blue-500 hover:bg-blue-500/10"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors duration-300 ${file ? "border-green-500 bg-green-500/10" : "border-gray-600 hover:border-blue-500 hover:bg-blue-500/10"
+                  }`}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={triggerFileInput}
@@ -303,9 +260,8 @@ export default function UploadPage() {
                 whileTap="tap"
                 onClick={handleUpload}
                 disabled={!file || isUploading}
-                className={`px-8 py-6 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-lg shadow-lg transition-all duration-300 ${
-                  !file || isUploading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`px-8 py-6 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-lg shadow-lg transition-all duration-300 ${!file || isUploading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
               >
                 {isUploading ? (
                   <>

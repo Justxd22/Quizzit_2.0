@@ -22,7 +22,7 @@ function shuffleArray<T>(array: T[]): T[] {
 
 export async function GET(request: NextRequest) {
   const limit = 60
-  const timePerQuestion = 600 
+  const timePerQuestion = 60
   let totalTime = 1 * timePerQuestion // total in seconds
 
   try {
