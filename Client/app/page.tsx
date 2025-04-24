@@ -8,6 +8,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { HeroBackground } from "@/components/ui/hero";
 import { HeroBackgroundDiff } from "@/components/ui/hero_inverse";
+import BlurText from "@/components/ui/BlurText"
 
 // Animation variants (can be customized)
 const fadeIn = {
@@ -69,31 +70,25 @@ export default function LandingPage() {
         <Header /> {/* Header might need position adjustments (e.g., absolute or fixed) if overlapping */}
 
         {/* Centered Text Content */}
-        <div className="container mx-auto flex flex-col items-center justify-center px-6 py-20 relative z-10 text-center"> {/* Centering content */}
+        <div className="flex min-h-screen flex-col justify-center items-center px-6 py-20 relative z-10 text-center">
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={staggerContainer}
-            className="max-w-3xl space-y-6" // Removed flex-1, md:max-w-xl, text-left, md:pr-10. Added max-width for readability.
+            variants={fadeIn}
+            className="w-full max-w-[800px] mx-auto flex flex-col gap-8"
           >
-            <motion.h1
-              variants={fadeIn}
-              className="text-5xl md:text-7xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-blue-500 to-purple-600" // Possibly larger text
-            >
-              Stake Your ETH. Challenge Your Mind.
-            </motion.h1>
-            <motion.p variants={fadeIn} className="text-lg md:text-xl text-gray-300">
-              Upload your study material and let our AI quiz you. Pass to get your
-              ETH back or donate to a charity if you fail.
+            <BlurText
+              key="start"
+              text={["Stake Your ETH", "Challenge Your Mind."]}
+              delay={150}
+              animateBy="words"
+              direction="top"
+              className="text-6xl font-black drop-shadow-[0_0_8px_#bee9f7]"
+            />
+            <motion.p className="text-3xl font-bold gradient-text" variants={fadeIn} transition={{ delay: 3 }}>
+            Upload your study material and let our AI quiz you. Pass to get your
+            ETH back or donate to a charity if you fail.
             </motion.p>
-            <motion.div variants={fadeIn}>
-              <Link
-                href="/login"
-                className="inline-block px-8 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 ease-in-out"
-              >
-                Get Started Now
-              </Link>
-            </motion.div>
           </motion.div>
         </div>
       </section>

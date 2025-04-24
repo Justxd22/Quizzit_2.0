@@ -1,67 +1,75 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 
-
 export const HeroBackground = () => {
   const patternRef = useRef(null);
   const containerRef = useRef(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  
-  // Handle mouse movement
+
+  const targetRef = useRef({ x: 0, y: 0 }); // Target mouse position
+  const currentRef = useRef({ x: 0, y: 0 }); // Smooth interpolated position
+
+  // Handle mouse movement - update the target position
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!containerRef.current) return;
-      
-      // Get container dimensions
       const rect = containerRef.current.getBoundingClientRect();
-      
-      // Calculate mouse position as percentage of container
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
-      
-      setMousePosition({ x, y });
+      targetRef.current = { x, y };
     };
-    
-    // Add event listener
-    window.addEventListener('mousemove', handleMouseMove);
-    
-    // Cleanup
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
-  
-  // Update pattern based on mouse position
+
+  // Smooth animation loop
   useEffect(() => {
-    if (patternRef.current) {
-      // Map mouse position to pattern offset (0-50 range)
-      const offsetX = mousePosition.x * 50;
-      const offsetY = mousePosition.y * 50;
-      
-      // Update pattern transformation
-      patternRef.current.setAttribute(
-        'patternTransform', 
-        `rotate(45) translate(${offsetX}, ${offsetY})`
-      );
-    }
-  }, [mousePosition]);
+    let animationFrameId;
+
+    const animate = () => {
+      const current = currentRef.current;
+      const target = targetRef.current;
+
+      // Lerp towards target
+      current.x += (target.x - current.x) * 0.05;
+      current.y += (target.y - current.y) * 0.05;
+
+      // Map to offset
+      const offsetX = current.x * 50;
+      const offsetY = current.y * 50;
+
+      if (patternRef.current) {
+        patternRef.current.setAttribute(
+          "patternTransform",
+          `rotate(45) translate(${offsetX}, ${offsetY})`
+        );
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate(); // Start the loop
+
+    return () => cancelAnimationFrame(animationFrameId); // Cleanup
+  }, []);
 
   return (
     <div ref={containerRef} className="absolute inset-0 opacity-70 z-0">
       <svg width="100%" height="100%" preserveAspectRatio="none">
         <defs>
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-          {/* Even larger pattern size with much thicker stroke */}
             <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          <pattern 
-            id="zigzag1" 
+          <pattern
+            id="zigzag1"
             ref={patternRef}
-            patternUnits="userSpaceOnUse" 
-            width="60" 
-            height="60" 
+            patternUnits="userSpaceOnUse"
+            width="60"
+            height="60"
             patternTransform="rotate(45)"
           >
             <path
