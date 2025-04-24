@@ -4,6 +4,13 @@
 Users upload study material → Pay $10 → AI generates quiz → Pass (≥80% in 3 tries) → Get $10 back → Fail → $10 goes to charity
 
 ---
+### Demo
+![Screenshot 1](.res/s1.png)  
+![Screenshot 2](.res/s2.1.png)  
+![Screenshot 2](.res/s2.png)  
+![Screenshot 3](.res/s3.png)  
+![Screenshot 4](.res/s4.png)  
+![Screenshot 5](.res/s5.png)  
 
 ## 1. **User Flow Overview**
 1. **User uploads course files** (PDFs, docs, etc.)
