@@ -54,7 +54,7 @@ export default function SelectQuiz() {
     const handleStartQuiz = async () => {
         if (!selectedQuizId) return
         const n = sessionStorage.getItem("name");
-        setUserName(n);
+        if (n) setUserName(n)
         setShowNameModal(true);
     }
 
