@@ -79,15 +79,14 @@ export default function LandingPage() {
           >
             <BlurText
               key="start"
-              text={["Stake Your ETH", "Challenge Your Mind."]}
+              text={["out smart AI", "or save PUPPIES"]}
               delay={150}
               animateBy="words"
               direction="top"
-              className="text-6xl font-black drop-shadow-[0_0_8px_#bee9f7]"
+              className="text-6xl font-black drop-shadow-[0_0_8px_#bee9f78a]"
             />
             <motion.p className="text-3xl font-bold gradient-text" variants={fadeIn} transition={{ delay: 3 }}>
-            Upload your study material and let our AI quiz you. Pass to get your
-            ETH back or donate to a charity if you fail.
+            AI-Powered. Blockchain-Secured.
             </motion.p>
           </motion.div>
         </div>

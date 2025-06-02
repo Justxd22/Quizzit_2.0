@@ -82,7 +82,7 @@ export default function Header() {
             
 
             {/* rgb(247 154 84 / 67%) : rgb(159 229 249 / 73%) */} 
-            <a href="/login">
+            <a href="/quiz/select">
             <button
   className="px-5 py-2 rounded-full text-sm text-white transition-colors bg-[linear-gradient(to_right,rgba(247,154,84,0.25),rgba(159,229,249,0.73))]"
 >

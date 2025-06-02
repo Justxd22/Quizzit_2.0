@@ -37,32 +37,40 @@ export default function QuizPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await fetch("/api/questions")
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch questions")
+        const guest = sessionStorage.getItem("guest") == "allowed"
+        let data;
+        if (guest) {
+          data = {
+            questions: JSON.parse(sessionStorage.getItem("quizQuestions") || ''),
+            totalTime: sessionStorage.getItem("totalTime")
+          }
         }
+        else {
 
-        const data = await response.json()
+          const response = await fetch("/api/questions")
 
-        if (!data.allowed) {
-          router.push('/attempts-exceeded')
-        }
-        if (data.allowed) {
+          if (!response.ok) {
+            throw new Error("Failed to fetch questions")
+          }
 
+          data = await response.json()
+
+          if (!data.allowed) {
+            router.push('/attempts-exceeded')
+          }
           document.cookie = `authToken=${data.token}; path=/; max-age=${1 * 24 * 60 * 60}; SameSite=Strict`;
-
-          setQuestions(data.questions)
-          const numberOfQuestions = data.questions.length
-          const totalTimeFromAPI = data.totalTime || 10 * 60 // fallback
-
-          setTotalTime(totalTimeFromAPI)
-          setTimePerQuestion(totalTimeFromAPI / numberOfQuestions)
-          setLoading(false)
-
-          // Initialize the question start time when questions are loaded
-          setQuestionStartTime(Date.now())
         }
+        setQuestions(data.questions)
+        const numberOfQuestions = data.questions.length
+        const totalTimeFromAPI = data.totalTime || 10 * 60 // fallback
+
+        setTotalTime(totalTimeFromAPI)
+        setTimePerQuestion(totalTimeFromAPI / numberOfQuestions)
+        setLoading(false)
+
+        // Initialize the question start time when questions are loaded
+        setQuestionStartTime(Date.now())
+
       } catch (error) {
         console.error("Failed to load questions:", error)
         setError("Failed to load questions. Please try again.")
@@ -129,57 +137,57 @@ export default function QuizPage() {
     }
   }, [])
 
-// Submit quiz
-const submitQuiz = useCallback(async () => {
-  try {
-    // Stop the timer
-    setTimerActive(false)
-    setSubmitting(true)
-    
-    // Process answers to handle time expired markers
-    const processedAnswers = Object.entries(answers).reduce((acc, [questionIndex, answer]) => {
-      // If the answer is the time expired marker, set it to an empty string to be counted as wrong
-      acc[questionIndex] = answer === "__TIME_EXPIRED__" ? "" : answer;
-      return acc;
-    }, {} as Record<string, string>);
+  // Submit quiz
+  const submitQuiz = useCallback(async () => {
+    try {
+      // Stop the timer
+      setTimerActive(false)
+      setSubmitting(true)
 
-    // Create submission data with answers and anti-cheat info
-    const submission = {
-      answers: questions.map((q, index) => ({
-        id: q.id,
-        answer: processedAnswers[index] ?? "" // default to empty if not found
-      })),
-      metadata: {
-        tabSwitches,
-        timeExpired,
-      },
+      // Process answers to handle time expired markers
+      const processedAnswers = Object.entries(answers).reduce((acc, [questionIndex, answer]) => {
+        // If the answer is the time expired marker, set it to an empty string to be counted as wrong
+        acc[questionIndex] = answer === "__TIME_EXPIRED__" ? "" : answer;
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Create submission data with answers and anti-cheat info
+      const submission = {
+        answers: questions.map((q, index) => ({
+          id: q.id,
+          answer: processedAnswers[index] ?? "" // default to empty if not found
+        })),
+        metadata: {
+          tabSwitches,
+          timeExpired,
+        },
+      }
+
+      // Submit to API
+      const response = await fetch("/api/submit", {
+        method: "POST",
+        body: JSON.stringify(submission),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to submit quiz")
+      }
+
+      const result = await response.json()
+
+      // Store result in session storage for results page
+      sessionStorage.setItem("quizResult", JSON.stringify(result))
+      sessionStorage.setItem("quizSubmission", JSON.stringify(submission))
+      sessionStorage.setItem("quizQuestions", JSON.stringify(questions))
+      // Navigate to results page
+      router.push("/quiz/results")
+    } catch (error) {
+      console.error("Failed to submit quiz:", error)
+      setError("Failed to submit quiz. Please try again.")
+      setSubmitting(false)
+      setTimerActive(true) // Restart timer if submission fails
     }
-
-    // Submit to API
-    const response = await fetch("/api/submit", {
-      method: "POST",
-      body: JSON.stringify(submission),
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to submit quiz")
-    }
-
-    const result = await response.json()
-
-    // Store result in session storage for results page
-    sessionStorage.setItem("quizResult", JSON.stringify(result))
-    sessionStorage.setItem("quizSubmission", JSON.stringify(submission))
-    sessionStorage.setItem("quizQuestions", JSON.stringify(questions))
-    // Navigate to results page
-    router.push("/quiz/results")
-  } catch (error) {
-    console.error("Failed to submit quiz:", error)
-    setError("Failed to submit quiz. Please try again.")
-    setSubmitting(false)
-    setTimerActive(true) // Restart timer if submission fails
-  }
-}, [answers, questions, tabSwitches, timeExpired, router])
+  }, [answers, questions, tabSwitches, timeExpired, router])
 
   // Handle quiz timer expiration
   const handleQuizTimeExpired = useCallback(() => {
@@ -285,11 +293,11 @@ const submitQuiz = useCallback(async () => {
       <div className="absolute inset-0 bg-black/50" /> {/* Dim overlay */}
       <div className="fixed top-4 right-4 z-10">
         {totalTime > 0 && timerActive && (
-          <Timer 
-            duration={totalTime} 
-            onExpire={handleQuizTimeExpired} 
+          <Timer
+            duration={totalTime}
+            onExpire={handleQuizTimeExpired}
             label="Quiz Time"
-            ref={timerRef} 
+            ref={timerRef}
           />
         )}
       </div>
@@ -335,8 +343,8 @@ const submitQuiz = useCallback(async () => {
                           answers[currentQuestionIndex] === option
                             ? "bg-sky-900/40 border-sky-400/70"
                             : answers[currentQuestionIndex] === "__TIME_EXPIRED__"
-                            ? "opacity-50 hover:bg-sky-900/20"
-                            : "hover:bg-sky-900/20",
+                              ? "opacity-50 hover:bg-sky-900/20"
+                              : "hover:bg-sky-900/20",
                         )}
                         onClick={() => handleOptionClick(option)}
                       >

@@ -1,9 +1,9 @@
-// /api/questions
-import { NextResponse, NextRequest } from "next/server"
-import type { QuizQuestion } from "@/lib/types"
-import { jwtVerify } from "jose"
+import { NextResponse, type NextRequest } from "next/server"
+import { jwtVerify, SignJWT } from "jose"
 import { createClient } from "@/lib/supabase"
 import { createJwtToken } from "@/lib/utils"
+import { v4 as uuidv4 } from "uuid"
+import { uniqueNamesGenerator, colors, animals, } from 'unique-names-generator';
 
 
 
@@ -20,17 +20,111 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
+// Create guest JWT token
+async function createGuestJwtToken(guestId: string, quizId: string) {
+  const token = await new SignJWT({
+    guestId,
+    quizId,
+    type: "guest",
+    createdAt: new Date().toISOString(),
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("6h")
+    .sign(JWT_SECRET)
+
+  return token
+}
+
 export async function GET(request: NextRequest) {
-  const limit = 60
   const timePerQuestion = 60
   let totalTime = 1 * timePerQuestion // total in seconds
 
   try {
     const token = request.cookies.get("authToken")?.value
-    if (!token) {
+    const quizId = request.nextUrl.searchParams.get("id")
+    let name = request.nextUrl.searchParams.get("name")
+    // Initialize Supabase client
+    const supabase = createClient()
+
+    if (quizId) {
+      // GUEST MODE
+      console.log("Guest mode activated for quiz:", quizId)
+
+      if (name == 'nill0' || name == "") {
+        name = uniqueNamesGenerator({
+          dictionaries: [colors, animals],
+          separator: '-',
+          style: 'lowerCase',
+        })
+      }
+
+      // Generate unique guest ID
+      const guestId = uuidv4()
+
+      // Fetch quiz questions from database
+      const { data: quiz, error: quizError } = await supabase
+        .from("quiz")
+        .select("quiz")
+        .eq("id", quizId)
+        .single()
+
+      if (quizError || !quiz) {
+        return NextResponse.json({ message: "Quiz not found" }, { status: 404 })
+      }
+
+      if (!quiz.quiz || quiz.quiz.length === 0) {
+        return NextResponse.json({ message: "No questions found for this quiz" }, { status: 404 })
+      }
+
+      // Randomize questions order for this guest
+      const shuffledQuestions = shuffleArray(quiz.quiz)
+
+      // Save guest session with randomized questions order in guest table
+      const { error: guestError } = await supabase.from("guest").insert({
+        name: name,
+        guest_id: guestId,
+        quiz_id: quizId,
+        quiz: shuffledQuestions, // Save the full questions with answers for later verification
+        created_at: new Date().toISOString(),
+      })
+
+      if (guestError) {
+        console.error("Error saving guest session:", guestError)
+        return NextResponse.json({ message: "Failed to create guest session" }, { status: 500 })
+      }
+
+      // Strip correct answers from questions sent to frontend
+      const questionsForFrontend = shuffledQuestions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        options: shuffleArray(q.options), // Shuffle options too
+      }))
+  
+      // Generate guest JWT token
+      const guestToken = await createGuestJwtToken(guestId, quizId)
+
+      // Calculate total time based on number of questions
+      totalTime = questionsForFrontend.length * timePerQuestion
+
+      const response = NextResponse.json({
+        totalTime,
+        questions: questionsForFrontend,
+        token: guestToken,
+        attempts: 1,
+        allowed: true,
+        mode: "guest",
+        guestId,
+        name,
+      })
+      return response;
+    }
+    else if (!token) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
+    // AUTHENTICATED USER MODE
+    console.log("Authenticated mode activated")
 
     // Verify token
     const { payload } = await jwtVerify(token, JWT_SECRET)
@@ -44,9 +138,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "Maximum quiz attempts reached" }, { status: 403 })
     }
 
-    // Initialize Supabase client
-    const supabase = createClient()
-
     // Check if user exists
     const { data: user, error } = await supabase.from("users").select("*").eq("wallet_address", walletAddress).eq("tx_hash", txHash).single()
     if (error || !user) {
@@ -58,7 +149,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "Maximum quiz attempts reached", allowed: false, attempts: 3 }, { status: 200 })
     }
     // Strip the correct answers from questions sent to frontend
-    const shuffledQuestions = shuffleArray(user.quiz).slice(0, limit).map((q) => ({
+    const shuffledQuestions = shuffleArray(user.quiz).map((q) => ({
       id: q.id,
       question: q.question,
       options: shuffleArray(q.options),

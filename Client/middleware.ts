@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 // Paths that require authentication
-const PROTECTED_PATHS = ["/quiz"]
+const PROTECTED_PATHS = ["/quizz"]
 
 export async function middleware(request: NextRequest) {
   // Get the pathname

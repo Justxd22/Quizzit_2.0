@@ -249,7 +249,7 @@ export default function ResultsPage() {
           })}
         </div>
 
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-8 gap-x-4">
         {!txHash && (
 
           <Button
@@ -259,15 +259,13 @@ export default function ResultsPage() {
             Try Again?
           </Button>
         )}
-                {txHash && (
 
 <Button
-  onClick={() => router.push("/")}
-  className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
+  onClick={() => router.push("/leaderboard")}
+  className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white px-4"
 >
-  Home
+Leaderborad
 </Button>
-)}
         </div>
       </div>
     </div>

@@ -13,9 +13,10 @@ export async function GET(request: Request) {
     
     // Fetch users ordered by best_score in descending order
     const { data: users, error, count } = await supabase
-      .from('users')
-      .select('wallet_address, tx_hash, best_score', { count: 'exact' })
-      .order('best_score', { ascending: false })
+      .from('guest')
+      .select('name, score', { count: 'exact' })
+      .neq('score', 0)
+      .order('score', { ascending: false })
       .limit(limit)
       .range(offset, offset + limit - 1);
 
@@ -24,14 +25,29 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch leaderboard data' }, { status: 500 });
     }
 
-    // Format user data with rank
-    const leaderboardData = users.map((user, index) => ({
-      id: user.wallet_address,
-      tx_hash: user.tx_hash,
+    const uniqueUsersMap = new Map<string, typeof users[0]>();
+
+    for (const user of users) {
+      if (!uniqueUsersMap.has(user.name)) {
+        uniqueUsersMap.set(user.name, user);
+      } else {
+        const existing = uniqueUsersMap.get(user.name)!;
+        // Keep the one with the higher score
+        if (user.score > existing.score) {
+          uniqueUsersMap.set(user.name, user);
+        }
+      }
+    }
+    
+    const uniqueUsers = Array.from(uniqueUsersMap.values());
+    
+    // Then add ranks
+    const leaderboardData = uniqueUsers.map((user, index) => ({
+      id: user.name,
+      tx_hash: user.name,
       rank: offset + index + 1,
-      score: user.best_score,
-      // Truncate tx_hash for display
-      displayName: `${user.tx_hash.substring(0, 6)}...${user.tx_hash.substring(user.tx_hash.length - 4)}`,
+      score: user.score,
+      displayName: user.name,
     }));
 
     return NextResponse.json({ 

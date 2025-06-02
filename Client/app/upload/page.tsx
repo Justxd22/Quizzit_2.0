@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Upload, FileText, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import Header from "@/components/ui/header";
 import { HeroBackground } from "@/components/ui/hero";
@@ -48,6 +51,8 @@ const MotionButton = motion(Button);
 export default function UploadPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  const [quizName, setQuizName] = useState("");
+  const [isGuest, setIsGuest] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -116,6 +121,13 @@ export default function UploadPage() {
   const handleUpload = async () => {
     if (!file) return;
     
+    // Validate required quiz name when in guest mode
+    if (isGuest && !quizName.trim()) {
+      setErrorMessage("Quiz name is required when using guest mode.");
+      setUploadStatus("error");
+      return;
+    }
+    
     setIsUploading(true);
     setUploadStatus("idle");
     
@@ -126,6 +138,14 @@ export default function UploadPage() {
       
       // Optional: Add number of questions parameter
       formData.append("num_questions", "10"); // Default to 10 questions
+      
+      // Add quiz name if in guest mode (required) or if provided
+      if (isGuest || quizName.trim()) {
+        formData.append("quiz_name", quizName.trim());
+      }
+      
+      // Add guest option
+      formData.append("guest", isGuest.toString());
       
       // Send to our API endpoint
       const response = await fetch("/api/upload", {
@@ -167,7 +187,7 @@ export default function UploadPage() {
         >
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 mb-6 text-center"
+            className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent text-white mb-6 text-center"
           >
             Upload Your Study Material
           </motion.h1>
@@ -190,7 +210,43 @@ export default function UploadPage() {
               </CardDescription>
             </CardHeader>
             
-            <CardContent>
+            <CardContent className="space-y-6">
+              {/* Guest Mode Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="guest-mode" className="text-white font-medium">
+                    Guest Mode
+                  </Label>
+                  <p className="text-sm text-gray-400">
+                    Take quiz without creating an account
+                  </p>
+                </div>
+                <Switch
+                  id="guest-mode"
+                  checked={isGuest}
+                  onCheckedChange={setIsGuest}
+                  className="data-[state=checked]:bg-blue-500"
+                />
+              </div>
+              
+              {/* Quiz Name Input - Only show when guest mode is enabled */}
+              {isGuest && (
+                <div className="space-y-2">
+                  <Label htmlFor="quiz-name" className="text-white">
+                    Quiz Name <span className="text-red-400">*</span>
+                  </Label>
+                  <Input
+                    id="quiz-name"
+                    type="text"
+                    placeholder="Enter a name for your quiz..."
+                    value={quizName}
+                    onChange={(e) => setQuizName(e.target.value)}
+                    className="bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                    required={isGuest}
+                  />
+                </div>
+              )}
+              
               {/* File upload area */}
               <div
                 className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors duration-300 ${file ? "border-green-500 bg-green-500/10" : "border-gray-600 hover:border-blue-500 hover:bg-blue-500/10"
@@ -257,7 +313,7 @@ export default function UploadPage() {
                 whileHover="hover"
                 whileTap="tap"
                 onClick={handleUpload}
-                disabled={!file || isUploading}
+                disabled={!file || isUploading || (isGuest && !quizName.trim())}
                 className={`px-8 py-6 bg-gradient-to-r from-green-400 to-blue-500 text-black font-bold rounded-lg shadow-lg transition-all duration-300 ${!file || isUploading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
               >
