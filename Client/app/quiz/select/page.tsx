@@ -24,7 +24,7 @@ export default function SelectQuiz() {
     const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null)
     const [startingQuiz, setStartingQuiz] = useState(false)
     const [showNameModal, setShowNameModal] = useState(false)
-    const [userName, setUserName] = useState("nill0")
+    const [userName, setUserName] = useState("")
 
     const router = useRouter()
 
@@ -64,7 +64,7 @@ export default function SelectQuiz() {
 
             // You can optionally send `userName` to session/localStorage or backend here.
 
-            const response = await fetch(`/api/questions?id=${selectedQuizId}&name=${userName}`)
+            const response = await fetch(`/api/questions?id=${selectedQuizId}&name=${userName === "" ? "nill0" : userName}`);
             if (!response.ok) throw new Error("Failed to fetch quiz questions")
             const data = await response.json()
 

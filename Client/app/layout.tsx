@@ -19,10 +19,51 @@ const DM_Sans = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: "Quizzit",
-  description: "Quizzit Ai quiz generator based off your own material, with little challenge to get you excited to pass the quizz!",
-};
+
+export const metadata = {
+  // Set the base URL for all relative paths
+  metadataBase: new URL('https://quizzit-2-0.vercel.app'),
+  
+  // Basic site info
+  title: 'Quizzit',
+  description: 'Quizzit Ai quiz generator based off your own material, with little challenge to get you excited to pass the quizz!',
+  
+  // Icons configuration - this covers most icon needs
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logo.svg', type: 'image/svg+xml' }
+    ],
+    apple: '/logo.svg', // Apple touch icon
+  },
+  
+  // Open Graph for Facebook, LinkedIn, etc.
+  openGraph: {
+    title: 'Quizzit',
+    description: 'Quizzit Ai quiz generator based off your own material, with little challenge to get you excited to pass the quizz!',
+    url: 'https://quizzit-2-0.vercel.app',
+    siteName: 'Quizzit',
+    images: [
+      {
+        url: '/logo.svg', // This will be your preview image
+        width: 1200,
+        height: 630,
+        alt: 'Quizzit - AI Quiz Generator',
+      }
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  
+  // Twitter/X cards
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Quizzit',
+    description: 'Quizzit Ai quiz generator based off your own material, with little challenge to get you excited to pass the quizz!',
+    images: ['/logo.svg'], // Twitter preview image
+  },
+  
+}
 
 export default function RootLayout({
   children,
