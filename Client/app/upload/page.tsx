@@ -137,7 +137,7 @@ export default function UploadPage() {
       formData.append("file", file);
       
       // Optional: Add number of questions parameter
-      formData.append("num_questions", "10"); // Default to 10 questions
+      formData.append("num_questions", "30"); // Default to 10 questions
       
       // Add quiz name if in guest mode (required) or if provided
       if (isGuest || quizName.trim()) {

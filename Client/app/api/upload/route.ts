@@ -46,7 +46,7 @@ async function extractTextFromPdf(buffer: Buffer): Promise<string> {
 }
 // ${text.slice(0, 10000)}
 
-async function generateMcqQuestions(text: string, numQuestions = 10) {
+async function generateMcqQuestions(text: string, numQuestions = 30) {
   const prompt = `Generate ${numQuestions} multiple choice questions based on this text:
 
 ${text}
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     // Get the number of questions from the form data or use default
     const numQuestionsParam = formData.get('num_questions') as string;
-    const numQuestions = numQuestionsParam ? Number.parseInt(numQuestionsParam, 10) : 10;
+    const numQuestions = numQuestionsParam ? Number.parseInt(numQuestionsParam, 10) : 30;
 
     if (isNaN(numQuestions) || numQuestions < 1 || numQuestions > 50) {
       return NextResponse.json(
