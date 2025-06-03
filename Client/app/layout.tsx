@@ -32,9 +32,9 @@ export const metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/lo.png', type: 'image/png' }
+      { url: '/log.jpg', type: 'image/jpeg' }
     ],
-    apple: '/lo.png', // Apple touch icon
+    apple: '/log.jpg', // Apple touch icon
   },
   
   // Open Graph for Facebook, LinkedIn, etc.
@@ -45,7 +45,7 @@ export const metadata = {
     siteName: 'Quizzit',
     images: [
       {
-        url: '/lo.png', // This will be your preview image
+        url: '/log.jpg', // This will be your preview image
         width: 1200,
         height: 630,
         alt: 'Quizzit - AI Quiz Generator',
@@ -60,7 +60,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'Quizzit',
     description: 'Quizzit Ai quiz generator based off your own material, with little challenge to get you excited to pass the quizz!',
-    images: ['/lo.png'], // Twitter preview image
+    images: ['/log.jpg'], // Twitter preview image
   },
   
 }
