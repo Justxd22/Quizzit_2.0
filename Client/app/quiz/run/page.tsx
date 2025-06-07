@@ -13,6 +13,7 @@ import { Timer } from "@/components/ui/timer"
 import { AnimatedBorder } from "@/components/ui/animated-border"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, AlertTriangle } from "lucide-react"
+import { MarkdownRenderer } from "@/components/ui/md"
 import type { QuizQuestion } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -33,7 +34,7 @@ export default function QuizPage() {
   const [timerActive, setTimerActive] = useState(true)
   const timerRef = useRef<any>(null)
 
-  // Check authentication and record attempt on initial load
+  // Mock data for demonstration - replace with your actual API call
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -323,7 +324,8 @@ export default function QuizPage() {
                     <h2 className="text-xl font-semibold text-sky-400 mb-2">
                       Question {currentQuestionIndex + 1} of {questions.length}
                     </h2>
-                    <p className="text-lg text-white">{currentQuestion.question}</p>
+                    <MarkdownRenderer content={currentQuestion.question} className="text-lg text-white leading-relaxed" />
+                    {/* <p className="text-lg text-white">{currentQuestion.question}</p> */}
                   </div>
 
                   <RadioGroup

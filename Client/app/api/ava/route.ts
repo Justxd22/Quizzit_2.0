@@ -10,8 +10,10 @@ export async function GET() {
     
     // Query the quizzes table
     const { data: quizzes, error } = await supabase
-      .from("quiz")
-      .select("id, name, len, difficulty");
+    .from("quiz")
+    .select("id, name, len, difficulty, created_at")
+    .neq('name', null)
+    .order('created_at', { ascending: false }); // Add this line
     
     if (error) {
       console.error("Database error:", error);
