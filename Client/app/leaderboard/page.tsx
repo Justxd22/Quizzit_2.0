@@ -20,6 +20,7 @@ type User = {
   rank: number
   score: number
   displayName: string
+  quizName?: string
 }
 
 type PaginationInfo = {
@@ -27,6 +28,12 @@ type PaginationInfo = {
   page: number
   limit: number
   pages: number
+}
+
+type Quiz = {
+  id: string
+  name: string
+  displayName: string
 }
 
 export default function LeaderboardPage() {
@@ -37,6 +44,8 @@ export default function LeaderboardPage() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedQuiz, setSelectedQuiz] = useState<string>("all")
+  const [quizzes, setQuizzes] = useState<Quiz[]>([])
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
     page: 1,
@@ -50,14 +59,45 @@ export default function LeaderboardPage() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   }
 
+  // Fetch available quizzes
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        const response = await fetch('/api/ava');
+        if (response.ok) {
+          const data = await response.json();
+          // Transform the data to match our Quiz type
+          const transformedQuizzes = data.quizzes.map((quiz: any) => ({
+            id: quiz.id,
+            name: quiz.name,
+            displayName: quiz.name.charAt(0).toUpperCase() + quiz.name.slice(1) // Capitalize first letter
+          }));
+          setQuizzes(transformedQuizzes);
+          setSelectedQuiz(transformedQuizzes[0].id)
+        }
+      } catch (err) {
+        console.error('Failed to fetch quizzes:', err);
+      }
+    };
+
+    fetchQuizzes();
+  }, []);
+
   // Fetch leaderboard data
   useEffect(() => {
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(
-          `/api/score?page=${pagination.page}&limit=${pagination.limit}`
-        );
+        const queryParams = new URLSearchParams({
+          page: pagination.page.toString(),
+          limit: pagination.limit.toString(),
+        });
+
+        if (selectedQuiz !== "all") {
+          queryParams.append("quiz", selectedQuiz);
+        }
+
+        const response = await fetch(`/api/score?${queryParams}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch leaderboard data');
@@ -75,7 +115,7 @@ export default function LeaderboardPage() {
     };
 
     fetchLeaderboard();
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, selectedQuiz]);
 
   // Filter users based on search query
   useEffect(() => {
@@ -105,6 +145,13 @@ export default function LeaderboardPage() {
     if (newPage > 0 && newPage <= pagination.pages) {
       setPagination({ ...pagination, page: newPage });
     }
+  };
+
+  // Handle quiz tab change
+  const handleQuizChange = (quizId: string) => {
+    setSelectedQuiz(quizId);
+    setPagination({ ...pagination, page: 1 }); // Reset to first page
+    setSearchQuery(""); // Clear search when switching tabs
   };
 
   return (
@@ -138,6 +185,30 @@ export default function LeaderboardPage() {
           </div>
         </section>
 
+        {/* Quiz Tabs */}
+        <section className="py-4 relative">
+          <div className="container px-4 md:px-6">
+            <div className="flex justify-center mb-8">
+              <div className="bg-black/70 backdrop-blur-sm rounded-xl border border-purple-500/30 p-2 shadow-2xl">
+                <div className="flex flex-wrap justify-center gap-2">
+                  {quizzes.map((quiz) => (
+                    <button
+                      key={quiz.id}
+                      onClick={() => handleQuizChange(quiz.id)}
+                      className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105  ${
+                        selectedQuiz === quiz.id
+                          ? "bg-purple-500 text-white shadow-lg shadow-purple-500/25"
+                          : "text-gray-300 hover:text-white hover:bg-purple-500/20"
+                      }`}
+                    >
+                      {quiz.displayName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Leaderboard Table */}
         <section className="w-full py-4 relative">
