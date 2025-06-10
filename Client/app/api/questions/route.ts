@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       // Fetch quiz questions from database
       const { data: quiz, error: quizError } = await supabase
         .from("quiz")
-        .select("quiz")
+        .select("quiz, notes")
         .eq("id", quizId)
         .single()
 
@@ -116,6 +116,7 @@ export async function GET(request: NextRequest) {
         mode: "guest",
         guestId,
         name,
+        notes: quiz.notes || ""
       })
       return response;
     }

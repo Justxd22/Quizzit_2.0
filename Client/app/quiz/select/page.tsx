@@ -73,6 +73,8 @@ export default function SelectQuiz() {
             sessionStorage.setItem("name", data.name);
             sessionStorage.setItem("totalTime", data.totalTime);
             sessionStorage.setItem("guest", "allowed");
+            sessionStorage.setItem("notes", data.notes);
+            console.log(data.notes);
             router.push("/quiz/run")
         } catch (error) {
             console.error("Error starting quiz:", error)
