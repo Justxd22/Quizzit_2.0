@@ -53,7 +53,7 @@ export default function SelectQuiz() {
 
     const handleStartQuiz = async () => {
         if (!selectedQuizId) return
-        const n = sessionStorage.getItem("name");
+        const n = localStorage.getItem("name");
         if (n) setUserName(n)
         setShowNameModal(true);
     }
@@ -70,7 +70,7 @@ export default function SelectQuiz() {
 
             document.cookie = `authToken=${data.token}; path=/; max-age=${1 * 24 * 60 * 60}; SameSite=Strict`;
             sessionStorage.setItem("quizQuestions", JSON.stringify(data.questions));
-            sessionStorage.setItem("name", data.name);
+            localStorage.setItem("name", data.name);
             sessionStorage.setItem("totalTime", data.totalTime);
             sessionStorage.setItem("guest", "allowed");
             sessionStorage.setItem("notes", data.notes);
