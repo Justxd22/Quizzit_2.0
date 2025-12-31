@@ -13,6 +13,7 @@ export async function GET() {
     .from("quiz")
     .select("id, name, len, difficulty, created_at")
     .neq('name', null)
+    .neq('hidden', true)
     .order('created_at', { ascending: false }); // Add this line
     
     if (error) {

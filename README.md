@@ -24,7 +24,7 @@ Users upload study material → Pay $10 → AI generates quiz → Pass (≥80% i
 
 ## 2. **Tech Stack Breakdown**
 - Frontend/Backend:  `Next.js` (w/ Vercel AI SDK + Tailwind)
-- DB: `MongoDB` or `Firebase`
+- DB: `Supabase`
 - Smart Contract: `Solidity + Hardhat` on `Sepolia`
 - File Parsing: `pdf-parse`, `mammoth`, `txt-parser`
 - Quiz Logic (AI): `OpenAI / Gemini / DeepSeek / Pydantic Agent`
