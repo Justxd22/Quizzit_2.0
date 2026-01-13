@@ -116,7 +116,7 @@ export function AnimatedBackground() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute top-0 left-0 w-full h-full -z-10 bg-gradient-to-b from-[#0a0a1a] to-[#0f172a]"
+      className="fixed top-0 left-0 w-full h-full -z-10 bg-gradient-to-b from-[#0a0a1a] to-[#0f172a]"
     />
   )
 }

@@ -1,3 +1,8 @@
+import React from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -7,81 +12,59 @@ interface MarkdownRendererProps {
 }
 
 export function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
-  // Parse content to identify code blocks
-  const parseContent = (text: string) => {
-    const parts = []
-    const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g
-    let lastIndex = 0
-    let match
-
-    while ((match = codeBlockRegex.exec(text)) !== null) {
-      // Add text before code block
-      if (match.index > lastIndex) {
-        const beforeText = text.slice(lastIndex, match.index).trim()
-        if (beforeText) {
-          parts.push({
-            type: 'text',
-            content: beforeText
-          })
-        }
-      }
-
-      // Add code block
-      const language = match[1] || 'text'
-      const code = match[2].trim()
-      parts.push({
-        type: 'code',
-        language,
-        content: code
-      })
-
-      lastIndex = match.index + match[0].length
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      const remainingText = text.slice(lastIndex).trim()
-      if (remainingText) {
-        parts.push({
-          type: 'text',
-          content: remainingText
-        })
-      }
-    }
-
-    return parts.length > 0 ? parts : [{ type: 'text', content: text }]
-  }
-
-  const parts = parseContent(content)
+  // Pre-process content to fix LaTeX rendering issues caused by string corruption
+  // We only restore the control characters to their string representation (e.g. \f -> \\f)
+  // We let remark-math handle the parsing of $...$ blocks naturally.
+  const processedContent = React.useMemo(() => {
+    if (!content) return ""
+    
+    return content
+      .replace(/\f/g, '\\f') // Restores \frac if it became \f + rac
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')
+      .replace(/\v/g, '\\v')
+  }, [content])
 
   return (
     <div className={className}>
-      {parts.map((part, index) => {
-        if (part.type === 'code') {
-          return (
-            <div key={index} className="my-4">
+      <style>{`
+        .katex { font-size: 1.3em !important; }
+        .katex-display { font-size: 1.5em !important; margin: 1em 0; }
+      `}</style>
+      <ReactMarkdown
+        remarkPlugins={[remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={{
+          code({ node, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || '')
+            const isInline = !match && !String(children).includes('\n')
+            
+            return !isInline && match ? (
               <SyntaxHighlighter
-                language={part.language}
+                {...props}
                 style={oneDark}
+                language={match[1]}
+                PreTag="div"
                 customStyle={{
                   borderRadius: '8px',
                   fontSize: '14px',
-                  lineHeight: '1.5'
+                  lineHeight: '1.5',
+                  margin: '1em 0'
                 }}
                 wrapLongLines={true}
               >
-                {part.content}
+                {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
-            </div>
-          )
-        } else {
-          return (
-            <div key={index} className="whitespace-pre-wrap">
-              {part.content}
-            </div>
-          )
-        }
-      })}
+            ) : (
+              <code {...props} className={className}>
+                {children}
+              </code>
+            )
+          }
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
     </div>
   )
 }

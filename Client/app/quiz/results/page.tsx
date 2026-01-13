@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AnimatedBackground } from "@/components/ui/animated-background"
+import { MarkdownRenderer } from "@/components/ui/md"
 import type { QuizQuestion, QuizResult } from "@/lib/types"
 import { CheckCircle, XCircle, ExternalLink } from "lucide-react"
 import confetti from 'canvas-confetti'
@@ -219,24 +220,25 @@ export default function ResultsPage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium mb-2">
-                          {index + 1}. {question.question}
-                        </h3>
+                        <div className="text-lg font-medium mb-2 flex gap-1">
+                          <span className="min-w-[1.5rem]">{index + 1}.</span>
+                          <MarkdownRenderer content={question.question} className="inline-block" />
+                        </div>
 
                         <div className="space-y-2 mt-3">
-                          <div className="text-sm">
-                            <span className="text-sky-300">Your answer: </span>
-                            <span className={isCorrect ? "text-green-400" : "text-red-400"}>
-                              {userAnswer?.answer || "Not answered"}
-                            </span>
+                          <div className="text-sm grid grid-cols-[auto_1fr] gap-2 items-start">
+                            <span className="text-sky-300 whitespace-nowrap pt-1">Your answer: </span>
+                            <div className={isCorrect ? "text-green-400" : "text-red-400"}>
+                              <MarkdownRenderer content={userAnswer?.answer || "Not answered"} />
+                            </div>
                           </div>
 
                           {!isCorrect && (
-                            <div className="text-sm">
-                              <span className="text-sky-300">Correct answer: </span>
-                              <span className="text-green-400">
-                                {userAnswer?.correctAnswer || question.correctAnswer}
-                              </span>
+                            <div className="text-sm grid grid-cols-[auto_1fr] gap-2 items-start">
+                              <span className="text-sky-300 whitespace-nowrap pt-1">Correct answer: </span>
+                              <div className="text-green-400">
+                                <MarkdownRenderer content={userAnswer?.correctAnswer || question.correctAnswer || ""} />
+                              </div>
                             </div>
                           )}
                         </div>

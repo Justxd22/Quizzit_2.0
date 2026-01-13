@@ -403,13 +403,13 @@ export default function QuizPage() {
                           )}
                           onClick={() => handleOptionClick(option)}
                         >
-                          <RadioGroupItem value={option} id={`option-${index}`} className="text-sky-400" />
+                          <RadioGroupItem value={option} id={`option-${index}`} className="text-sky-400 mt-1" />
                           <Label
                             htmlFor={`option-${index}`}
                             className="flex-1 cursor-pointer py-1 text-white"
                             onClick={(e) => e.preventDefault()} // Prevent label click from interfering with div click
                           >
-                            {option}
+                            <MarkdownRenderer content={option} />
                           </Label>
                         </motion.div>
                       ))}
