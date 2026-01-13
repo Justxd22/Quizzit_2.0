@@ -1,25 +1,27 @@
 import { NextResponse } from 'next/server';
 import { createClient } from "@/lib/supabase";
-
+import { unstable_cache } from 'next/cache';
 
 export async function GET() {
   try {
-    
-    // Initialize Supabase client
-    const supabase = createClient();
-    
-    // Query the quizzes table
-    const { data: quizzes, error } = await supabase
-    .from("quiz")
-    .select("id, name, len, difficulty, created_at")
-    .neq('name', null)
-    .neq('hidden', true)
-    .order('created_at', { ascending: false }); // Add this line
-    
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json({ message: "Failed to fetch quizzes" }, { status: 500 });
-    }
+    const getCachedQuizzes = unstable_cache(
+      async () => {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("quiz")
+          .select("id, name, len, difficulty, created_at")
+          .neq('name', null)
+          .neq('hidden', true)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        return data;
+      },
+      ['quizzes-list'], // Cache key
+      { revalidate: 60 } // 1 minutes
+    );
+
+    const quizzes = await getCachedQuizzes();
     
     return NextResponse.json({ quizzes });
   } catch (error) {
