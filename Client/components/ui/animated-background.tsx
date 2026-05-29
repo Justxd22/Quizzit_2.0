@@ -12,6 +12,23 @@ export function AnimatedBackground() {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
+    // Respect users who prefer reduced motion — render a static gradient only.
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    if (prefersReducedMotion) return
+
+    // Detect low-end devices to scale the effect down.
+    const cores = navigator.hardwareConcurrency ?? 4
+    const deviceMemory = (navigator as any).deviceMemory ?? 4
+    const isLowEnd = cores <= 4 || deviceMemory <= 4 || window.innerWidth < 768
+
+    // Connecting lines are the expensive O(n^2) part — only draw them on
+    // capable devices, and cap how far apart linked particles can be.
+    const drawLines = !isLowEnd
+    const maxDistance = 130
+    const maxDistanceSq = maxDistance * maxDistance
+
     // Set canvas dimensions
     const setCanvasDimensions = () => {
       canvas.width = window.innerWidth
@@ -60,41 +77,29 @@ export function AnimatedBackground() {
       }
     }
 
-    // Create particles
-    const particlesArray: Particle[] = []
-    const numberOfParticles = Math.min(100, Math.floor((canvas.width * canvas.height) / 10000))
+    // Fewer particles overall, and far fewer on low-end hardware.
+    const densityDivisor = isLowEnd ? 32000 : 16000
+    const maxParticles = isLowEnd ? 35 : 70
+    const numberOfParticles = Math.min(
+      maxParticles,
+      Math.floor((canvas.width * canvas.height) / densityDivisor),
+    )
 
+    const particlesArray: Particle[] = []
     for (let i = 0; i < numberOfParticles; i++) {
       particlesArray.push(new Particle())
     }
 
-    // Animation loop
-    const animate = () => {
-      ctx.fillStyle = "rgba(10, 15, 30, 0.1)"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      for (let i = 0; i < particlesArray.length; i++) {
-        particlesArray[i].update()
-        particlesArray[i].draw()
-      }
-
-      // Connect particles with lines
-      connectParticles()
-
-      requestAnimationFrame(animate)
-    }
-
-    // Connect nearby particles with lines
+    // Connect nearby particles with lines (uses squared distance — no sqrt).
     const connectParticles = () => {
-      const maxDistance = 150
       for (let a = 0; a < particlesArray.length; a++) {
-        for (let b = a; b < particlesArray.length; b++) {
+        for (let b = a + 1; b < particlesArray.length; b++) {
           const dx = particlesArray[a].x - particlesArray[b].x
           const dy = particlesArray[a].y - particlesArray[b].y
-          const distance = Math.sqrt(dx * dx + dy * dy)
+          const distanceSq = dx * dx + dy * dy
 
-          if (distance < maxDistance) {
-            const opacity = 1 - distance / maxDistance
+          if (distanceSq < maxDistanceSq) {
+            const opacity = 1 - distanceSq / maxDistanceSq
             ctx.strokeStyle = `rgba(80, 180, 255, ${opacity * 0.2})`
             ctx.lineWidth = 1
             ctx.beginPath()
@@ -106,9 +111,32 @@ export function AnimatedBackground() {
       }
     }
 
-    animate()
+    // Throttle to ~30fps to halve the work on weak GPUs/CPUs.
+    const frameInterval = 1000 / 30
+    let lastFrame = 0
+    let rafId = 0
+
+    const animate = (now: number) => {
+      rafId = requestAnimationFrame(animate)
+
+      if (now - lastFrame < frameInterval) return
+      lastFrame = now
+
+      ctx.fillStyle = "rgba(10, 15, 30, 0.18)"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update()
+        particlesArray[i].draw()
+      }
+
+      if (drawLines) connectParticles()
+    }
+
+    rafId = requestAnimationFrame(animate)
 
     return () => {
+      cancelAnimationFrame(rafId)
       window.removeEventListener("resize", setCanvasDimensions)
     }
   }, [])

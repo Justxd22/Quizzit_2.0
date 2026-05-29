@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
@@ -13,7 +13,7 @@ import { Timer } from "@/components/ui/timer"
 import { AnimatedBorder } from "@/components/ui/animated-border"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Loader2, AlertTriangle, Info } from "lucide-react"
+import { Loader2, AlertTriangle, Info, ArrowLeft, ArrowRight } from "lucide-react"
 import { MarkdownRenderer } from "@/components/ui/md"
 import type { QuizQuestion } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -36,7 +36,6 @@ export default function QuizPage() {
   const [showWarningModal, setShowWarningModal] = useState(false)
   const [warningMessage, setWarningMessage] = useState<string>("")
   const [quizStarted, setQuizStarted] = useState(false)
-  const timerRef = useRef<any>(null)
 
   // Mock data for demonstration - replace with your actual API call
   useEffect(() => {
@@ -328,8 +327,13 @@ export default function QuizPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <MarkdownRenderer 
-              content={warningMessage} 
+            <img
+              src="/study.png"
+              alt="Quiz instructions"
+              className="mx-auto mb-4 w-full max-w-xs rounded-lg border border-sky-500/20"
+            />
+            <MarkdownRenderer
+              content={warningMessage}
               className="text-white leading-relaxed prose prose-invert max-w-none"
             />
           </div>
@@ -349,8 +353,7 @@ export default function QuizPage() {
           <Timer
             duration={totalTime}
             onExpire={handleQuizTimeExpired}
-            label="Quiz Time"
-            ref={timerRef}
+            label="Time Remaining"
           />
         )}
       </div>
@@ -358,7 +361,12 @@ export default function QuizPage() {
       {quizStarted && (
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
           <div className="w-full max-w-2xl mb-4">
-            <ProgressBar progress={progress} questionTimeProgress={questionTimeProgress} />
+            <ProgressBar
+              progress={progress}
+              current={currentQuestionIndex + 1}
+              total={questions.length}
+              questionTimeProgress={questionTimeProgress}
+            />
           </div>
 
           <AnimatePresence mode="wait">
@@ -373,12 +381,15 @@ export default function QuizPage() {
               <div className="relative">
                 <AnimatedBorder />
                 <Card className="backdrop-blur-md bg-black/30 border border-sky-500/50 shadow-lg shadow-sky-500/20 text-white overflow-hidden">
-                  <div className="p-6">
-                    <div className="mb-6">
-                      <h2 className="text-xl font-semibold text-sky-400 mb-2">
-                        Question {currentQuestionIndex + 1} of {questions.length}
-                      </h2>
-                      <MarkdownRenderer content={currentQuestion.question} className="text-lg text-white leading-relaxed" />
+                  <div className="p-6 md:p-8">
+                    <div className="mb-8">
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400/80">
+                        Question {currentQuestionIndex + 1}
+                      </p>
+                      <MarkdownRenderer
+                        content={currentQuestion.question}
+                        className="text-2xl md:text-3xl font-bold text-white leading-snug"
+                      />
                     </div>
 
                     <RadioGroup
@@ -386,42 +397,64 @@ export default function QuizPage() {
                       onValueChange={handleAnswerSelect}
                       className="space-y-3"
                     >
-                      {currentQuestion.options.map((option, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2, delay: index * 0.1 }}
-                          className={cn(
-                            "flex items-center space-x-2 rounded-lg p-4 transition-colors cursor-pointer",
-                            "border border-sky-500/30 bg-black/20 backdrop-blur-sm",
-                            answers[currentQuestionIndex] === option
-                              ? "bg-sky-900/40 border-sky-400/70"
-                              : answers[currentQuestionIndex] === "__TIME_EXPIRED__"
-                                ? "opacity-50 hover:bg-sky-900/20"
-                                : "hover:bg-sky-900/20",
-                          )}
-                          onClick={() => handleOptionClick(option)}
-                        >
-                          <RadioGroupItem value={option} id={`option-${index}`} className="text-sky-400 mt-1" />
-                          <Label
-                            htmlFor={`option-${index}`}
-                            className="flex-1 cursor-pointer py-1 text-white"
-                            onClick={(e) => e.preventDefault()} // Prevent label click from interfering with div click
+                      {currentQuestion.options.map((option, index) => {
+                        const isSelected = answers[currentQuestionIndex] === option
+                        const letter = String.fromCharCode(65 + index) // A, B, C, D ...
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.2, delay: index * 0.1 }}
+                            className={cn(
+                              "group flex items-center gap-4 rounded-xl p-4 transition-all cursor-pointer",
+                              "border backdrop-blur-sm",
+                              isSelected
+                                ? "bg-sky-900/40 border-sky-400/70 shadow-md shadow-sky-500/20"
+                                : answers[currentQuestionIndex] === "__TIME_EXPIRED__"
+                                  ? "border-sky-500/30 bg-black/20 opacity-50 hover:bg-sky-900/20"
+                                  : "border-sky-500/25 bg-black/20 hover:bg-sky-900/20 hover:border-sky-400/50",
+                            )}
+                            onClick={() => handleOptionClick(option)}
                           >
-                            <MarkdownRenderer content={option} />
-                          </Label>
-                        </motion.div>
-                      ))}
+                            {/* Letter badge */}
+                            <div
+                              className={cn(
+                                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-all",
+                                isSelected
+                                  ? "bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-md shadow-sky-500/40"
+                                  : "bg-sky-950/60 border border-sky-500/30 text-sky-300 group-hover:border-sky-400/60",
+                              )}
+                            >
+                              {letter}
+                            </div>
+
+                            <Label
+                              htmlFor={`option-${index}`}
+                              className="flex-1 cursor-pointer text-base text-white"
+                              onClick={(e) => e.preventDefault()} // Prevent label click from interfering with div click
+                            >
+                              <MarkdownRenderer content={option} />
+                            </Label>
+
+                            <RadioGroupItem
+                              value={option}
+                              id={`option-${index}`}
+                              className="shrink-0 text-sky-400"
+                            />
+                          </motion.div>
+                        )
+                      })}
                     </RadioGroup>
 
-                    <div className="flex justify-between mt-6">
+                    <div className="flex justify-between items-center mt-8">
                       <Button
                         variant="outline"
                         onClick={handlePrevQuestion}
                         disabled={currentQuestionIndex === 0}
-                        className="border-sky-500/50 text-sky-300 hover:bg-sky-900/30"
+                        className="gap-2 border-sky-500/50 text-sky-300 hover:bg-sky-900/30 disabled:opacity-40"
                       >
+                        <ArrowLeft className="h-4 w-4" />
                         Previous
                       </Button>
 
@@ -429,17 +462,19 @@ export default function QuizPage() {
                         <Button
                           onClick={handleNextQuestion}
                           disabled={!answers[currentQuestionIndex] && answers[currentQuestionIndex] !== "__TIME_EXPIRED__"}
-                          className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
+                          className="gap-2 bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
                         >
                           Next
+                          <ArrowRight className="h-4 w-4" />
                         </Button>
                       ) : (
                         <Button
                           onClick={handleSubmitQuiz}
                           disabled={!answers[currentQuestionIndex] && answers[currentQuestionIndex] !== "__TIME_EXPIRED__"}
-                          className="bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white"
+                          className="gap-2 bg-gradient-to-r from-emerald-500 to-sky-400 hover:from-emerald-400 hover:to-sky-300 text-white"
                         >
                           Submit Quiz
+                          <ArrowRight className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
