@@ -220,8 +220,8 @@ export default function ResultsPage() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="text-lg font-medium mb-2 flex gap-1">
-                          <span className="min-w-[1.5rem]">{index + 1}.</span>
+                        <div className="text-lg font-medium mb-2 flex gap-2">
+                          <span className="shrink-0 tabular-nums">{index + 1}.</span>
                           <MarkdownRenderer content={question.question} className="inline-block" />
                         </div>
 

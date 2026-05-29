@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 interface ProgressBarProps {
@@ -9,9 +10,21 @@ interface ProgressBarProps {
   questionTimeProgress?: number
 }
 
-const SEGMENTS = 28
+// Pick a segment count that keeps each dash from getting too cramped.
+// Roughly one segment per ~22px of viewport width, clamped to a sane range.
+function getSegmentCount(width: number) {
+  return Math.max(8, Math.min(28, Math.floor(width / 22)))
+}
 
 export function ProgressBar({ progress, current, total, questionTimeProgress }: ProgressBarProps) {
+  const [segments, setSegments] = useState(20)
+
+  useEffect(() => {
+    const update = () => setSegments(getSegmentCount(window.innerWidth))
+    update()
+    window.addEventListener("resize", update)
+    return () => window.removeEventListener("resize", update)
+  }, [])
   // Determine color for the question time progress bar
   const getTimeProgressColor = () => {
     if (questionTimeProgress && questionTimeProgress >= 90) {
@@ -24,7 +37,7 @@ export function ProgressBar({ progress, current, total, questionTimeProgress }: 
   }
 
   // Number of fully/partially lit segments based on overall progress
-  const filledCount = Math.round((progress / 100) * SEGMENTS)
+  const filledCount = Math.round((progress / 100) * segments)
 
   return (
     <div className="w-full space-y-3">
@@ -42,8 +55,8 @@ export function ProgressBar({ progress, current, total, questionTimeProgress }: 
       </div>
 
       {/* Segmented progress bar */}
-      <div className="flex w-full items-center gap-1.5">
-        {Array.from({ length: SEGMENTS }).map((_, i) => {
+      <div className="flex w-full items-center gap-1 sm:gap-1.5">
+        {Array.from({ length: segments }).map((_, i) => {
           const isFilled = i < filledCount
           const isLeading = i === filledCount - 1
           // Interpolate hue across the filled segments: amber (45) -> sky blue (200)

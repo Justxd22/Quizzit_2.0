@@ -67,10 +67,11 @@ export default function QuizPage() {
         }
         setQuestions(data.questions)
         const numberOfQuestions = data.questions.length
-        const totalTimeFromAPI = data.totalTime || 10 * 60 // fallback
+        // Total time = (number of questions / 4) minutes, rounded (e.g. 161/4 = 40.25 -> 40 min)
+        const computedTime = Math.round(numberOfQuestions / 4) * 60
 
-        setTotalTime(totalTimeFromAPI)
-        setTimePerQuestion(totalTimeFromAPI / numberOfQuestions)
+        setTotalTime(computedTime)
+        setTimePerQuestion(computedTime / numberOfQuestions)
         
         // Check for warning message
         if (data.warningMessage && data.warningMessage.trim()) {
@@ -348,16 +349,6 @@ export default function QuizPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="fixed top-4 right-4 z-10">
-        {totalTime > 0 && timerActive && quizStarted && (
-          <Timer
-            duration={totalTime}
-            onExpire={handleQuizTimeExpired}
-            label="Time Remaining"
-          />
-        )}
-      </div>
-
       {quizStarted && (
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
           <div className="w-full max-w-2xl mb-4">
@@ -383,9 +374,6 @@ export default function QuizPage() {
                 <Card className="backdrop-blur-md bg-black/30 border border-sky-500/50 shadow-lg shadow-sky-500/20 text-white overflow-hidden">
                   <div className="p-6 md:p-8">
                     <div className="mb-8">
-                      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400/80">
-                        Question {currentQuestionIndex + 1}
-                      </p>
                       <MarkdownRenderer
                         content={currentQuestion.question}
                         className="text-2xl md:text-3xl font-bold text-white leading-snug"
@@ -489,6 +477,17 @@ export default function QuizPage() {
               </div>
             </motion.div>
           </AnimatePresence>
+
+          {/* Timer: below the card in flow (mobile/tablet), fixed top-right on large screens */}
+          {totalTime > 0 && timerActive && (
+            <div className="mt-4 flex w-full max-w-2xl justify-center lg:fixed lg:top-4 lg:right-4 lg:z-20 lg:mt-0 lg:w-auto lg:max-w-none">
+              <Timer
+                duration={totalTime}
+                onExpire={handleQuizTimeExpired}
+                label="Time Remaining"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
