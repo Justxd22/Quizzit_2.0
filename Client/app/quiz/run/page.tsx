@@ -68,7 +68,7 @@ export default function QuizPage() {
         setQuestions(data.questions)
         const numberOfQuestions = data.questions.length
         // Total time = (number of questions / 4) minutes, rounded (e.g. 161/4 = 40.25 -> 40 min)
-        const computedTime = Math.round(numberOfQuestions / 4) * 60
+        const computedTime = Math.round(numberOfQuestions / 2.5) * 60
 
         setTotalTime(computedTime)
         setTimePerQuestion(computedTime / numberOfQuestions)
